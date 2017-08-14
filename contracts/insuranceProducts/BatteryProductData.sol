@@ -1,6 +1,7 @@
 pragma solidity ^0.4.13;
 
 // import "./PolicyInvestable.sol";
+import "./../ContractManager.sol";
 
 contract BatteryProductData {//is PolicyInvestable { 
 
@@ -19,12 +20,10 @@ contract BatteryProductData {//is PolicyInvestable {
   uint public maxPayout;
   uint public loading;
 
-  // Controller is used for updating value
-  address controller = 0x2033d81c062dE642976300c6eabCbA149e4372BE;
-  // Insurance Controller contract, that has a right modify data; Should be taken from LibManager
-  address insuranceController = 0x0;
-  // Asset Controller contract, that has a right modify data; Should be taken from LibManager
-  address assetController = 0x0;
+  // Contract manager contract.
+  ContractManager contractManagerAddress = ContractManager(0xca35b7d915458ef540ade6068dfe2f44e8fa733c);
+  // Battery product data contract taken from ContractManager
+  address baterryProductControllerAddress = 0x0;
 
   struct PolicyData {
     uint endDateTimestamp;
@@ -37,7 +36,19 @@ contract BatteryProductData {//is PolicyInvestable {
     bool confirmed;
   }
 
-  function addInvestment(address investor) payable {
+
+  /**
+   * @dev Throws if called by any account other than the product controller.
+   */
+  modifier onlyProductController() {
+    baterryProductControllerAddress = contractManagerAddress.getContract("BatteryProductController");
+    require(msg.sender == baterryProductControllerAddress);
+    _;
+  }
+
+
+
+  function addInvestment(address investor) payable onlyProductController {
     require(maxInvestmentCap > (totalInvestedAmount + msg.value));
 
     investors[investor] = investors[investor] + msg.value;
@@ -48,7 +59,7 @@ contract BatteryProductData {//is PolicyInvestable {
   // Function is long because solidity does not support passing structs
   function addPolicy(address policyHolder, uint endDateTimestamp, uint nextPaymentTimestamp,
                      uint monthlyPayment, uint maxPayout, uint totalPrice, string itemId, 
-                     bool claimed, bool confirmed) payable {
+                     bool claimed, bool confirmed) payable onlyProductController {
 
     require(msg.value < monthlyPayment);
 
@@ -64,11 +75,11 @@ contract BatteryProductData {//is PolicyInvestable {
     return (policy.endDateTimestamp, policy.claimed, policy.confirmed, policy.maxPayout);
   }
 
-  function confirmPolicy(address policyHolder) {
+  function confirmPolicy(address policyHolder) onlyProductController {
     insurancePolicies[policyHolder].confirmed = true;
   }
 
-  function claim(address policyHolder, uint payout) {
+  function claim(address policyHolder, uint payout) onlyProductController {
     require(this.balance > payout);
 
     var policy = insurancePolicies[policyHolder];

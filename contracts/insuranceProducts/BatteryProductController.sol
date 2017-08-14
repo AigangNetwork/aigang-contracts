@@ -1,21 +1,36 @@
 pragma solidity ^0.4.13;
 
 import "./BatteryProductData.sol";
+import "./../ContractManager.sol";
 
 contract BatteryProductController { 
 
   // Controller is used for updating value
   address controllerAddress = 0x2033d81c062dE642976300c6eabCbA149e4372BE;
-  // Insurance Data contract. Should be taken from LibManager
-  address productDataAddress = 0x0;
-  BatteryProductData batteryProductData = BatteryProductData(productDataAddress);
+  // Contract manager contract.
+  ContractManager contractManagerAddress = ContractManager(0xca35b7d915458ef540ade6068dfe2f44e8fa733c);
+  // Battery product data contract taken from ContractManager
+  BatteryProductData batteryProductData;
 
   event Insured(string deviceName, uint insurancePrice);
   event Claimed(uint payout); 
   event Invested(uint amount);
 
+  /**
+   * @dev Throws if called by any account other than the product controller.
+   */
+  modifier onlyController() {
+    require(msg.sender == controllerAddress);
+    _;
+  }
+
+  modifier updateProductDataReference() {
+    batteryProductData = BatteryProductData(contractManagerAddress.getContract("BatteryProductData"));
+    _;
+  }
+
   // ----- Investment logic
-  function invest() payable {
+  function invest() payable updateProductDataReference {
     require(msg.value > 0);
 
     batteryProductData.addInvestment.value(msg.value)(msg.sender);
@@ -25,7 +40,10 @@ contract BatteryProductController {
 
 
   // ----- Insurance logic
-  function policyPrice(string deviceBrand, string deviceYear, string wearLevel, string region) constant returns(uint price) {
+  function policyPrice(string deviceBrand, string deviceYear, string wearLevel, string region) 
+      constant updateProductDataReference returns(uint price) {
+
+
     // set defaults
     uint deviceBrandMultiplier = batteryProductData.getInsuranceParameter('deviceBrand', 'default');
     uint deviceYearMultiplier = batteryProductData.getInsuranceParameter('deviceYear', 'default');
@@ -54,7 +72,7 @@ contract BatteryProductController {
   }
 
 
-  function insure(string itemId, string deviceBrand, string deviceYear, string wearLevel, string region) payable {
+  function insure(string itemId, string deviceBrand, string deviceYear, string wearLevel, string region) payable updateProductDataReference {
     uint totalPrice = policyPrice(deviceBrand, deviceYear, wearLevel, region);
     uint monthlyPayment = totalPrice / 12;
 
@@ -65,13 +83,11 @@ contract BatteryProductController {
     Insured(deviceBrand, msg.value);
   }
 
-  function confirmPolicy(address policyHolder) {
-    require(controllerAddress == msg.sender);
-
+  function confirmPolicy(address policyHolder) onlyController updateProductDataReference {
     batteryProductData.confirmPolicy(policyHolder);
   }
 
-  function claim(uint wearLevel) {
+  function claim(uint wearLevel) updateProductDataReference {
     var (endDateTimestamp, claimed, confirmed, maxPayout) = batteryProductData.getPolicyData(msg.sender);
 
     require(wearLevel < 70);
