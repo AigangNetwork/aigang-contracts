@@ -5,8 +5,10 @@ contract ProductManager {
 
 	function addProduct(bytes32 name) {
 		uint productIndex = IndexOf(allProducts, name);
-
-		require(productIndex < allProducts.length);
+    
+        if(allProducts.length > 0) {
+		    require(productIndex < allProducts.length);
+        }
 
 		allProducts.push(name);
 	}
@@ -22,10 +24,12 @@ contract ProductManager {
 	/** Finds the index of a given value in an array. */
 	function IndexOf(bytes32[] values, bytes32 value) internal returns(uint) {
 		uint i = 0;
-		while (values[i] == value && i == values.length) {
-		  i++;
+		if(values.length > 0) {
+		    while (values[i] == value && i < values.length) {
+     		  i++;
+     		}
 		}
-
+		
 		return i;
 
 	}
