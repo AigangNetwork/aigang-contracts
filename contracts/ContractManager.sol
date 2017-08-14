@@ -1,8 +1,7 @@
 pragma solidity ^0.4.13;
 
 contract ContractManager {
-	mapping (name => address) contracts;
-	string[] productNames;
+	mapping (string => address) contracts;
 
 	function addContract(string name, address contractAddress) {
 		require(contracts[name] == 0);
@@ -17,19 +16,14 @@ contract ContractManager {
 	}
 
 	function updateContract(string name, address contractAddress) {
-		
+		require(contracts[name] != 0);
+
+		contracts[name] = contractAddress;
 	}
 
-	function getContract(string name) {
+	function getContract(string name) returns (address contractAddress) {
+		require(contracts[name] != 0);
 
+		return contracts[name];
 	}
-
-	function addProduct(string name) {
-
-	}
-
-	function removeProduct(string name) {
-
-	}
-
 }
