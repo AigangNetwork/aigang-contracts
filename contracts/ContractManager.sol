@@ -21,7 +21,7 @@ contract ContractManager {
 		contracts[name] = contractAddress;
 	}
 
-	function getContract(string name) returns (address contractAddress) {
+	function getContract(string name) constant returns (address contractAddress) {
 		require(contracts[name] != 0);
 
 		return contracts[name];

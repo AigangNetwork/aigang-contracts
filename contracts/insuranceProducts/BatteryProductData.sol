@@ -92,7 +92,7 @@ contract BatteryProductData {//is PolicyInvestable {
     policyHolder.transfer(payout);
   }
 
-  function BatteryProductData() payable {
+  function BatteryProductData() {
     setInitialInsuranceParameters();
   }
 
@@ -130,9 +130,12 @@ contract BatteryProductData {//is PolicyInvestable {
 
     // Loading percentage (expenses, etc)
     loading = 50;
+
+    // Max payout (1 ETH)
+    maxInvestmentCap = 1000000000000000000;
   }
 
-  function getInsuranceParameter(string parameter, string key) returns (uint value) {
+  function getInsuranceParameter(string parameter, string key) constant returns (uint value) {
     return insuranceParameters[parameter][key];
   }
 
