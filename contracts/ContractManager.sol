@@ -1,21 +1,24 @@
 pragma solidity ^0.4.13;
 
-contract ContractManager {
+import "./helpers/Ownable.sol";
+
+// Ownable sets the contract creator as Owner. Ownership can be transferred.
+contract ContractManager is Ownable {
 	mapping (string => address) contracts;
 
-	function addContract(string name, address contractAddress) {
+	function addContract(string name, address contractAddress) onlyOwner {
 		require(contracts[name] == 0);
 
 		contracts[name] = contractAddress;
 	}
 
-	function removeContract(string name) {
+	function removeContract(string name) onlyOwner {
 		require(contracts[name] != 0);
 
 		contracts[name] = 0;
 	}
 
-	function updateContract(string name, address contractAddress) {
+	function updateContract(string name, address contractAddress) onlyOwner {
 		require(contracts[name] != 0);
 
 		contracts[name] = contractAddress;

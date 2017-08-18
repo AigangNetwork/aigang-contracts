@@ -1,9 +1,13 @@
 pragma solidity ^0.4.13;
 
-contract ProductManager {
+import "./helpers/Ownable.sol";
+
+// Ownable sets the contract creator as Owner. Ownership can be transferred.
+contract ProductManager is Ownable {
+	
 	bytes32[] allProducts;
 
-	function addProduct(bytes32 name) {
+	function addProduct(bytes32 name) onlyOwner {
 		uint productIndex = IndexOf(allProducts, name);
     
         if(allProducts.length > 0) {
@@ -13,7 +17,7 @@ contract ProductManager {
 		allProducts.push(name);
 	}
 
-	function removeProduct(bytes32 name) {
+	function removeProduct(bytes32 name) onlyOwner {
 		allProducts = RemoveByValue(allProducts, name);
 	}
 
