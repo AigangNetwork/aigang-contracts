@@ -12,8 +12,8 @@ contract BatteryProductController {
   // Battery product data contract taken from ContractManager
   BatteryProductData batteryProductData;
 
-  event Insured(string deviceName, uint insurancePrice);
-  event Claimed(uint payout); 
+  event Insured(string deviceBrand, string deviceYear, string wearLevel, string region, uint insurancePrice);
+  event Claimed(uint payout, uint wearLevel); 
   event Invested(uint amount);
 
   /**
@@ -80,7 +80,7 @@ contract BatteryProductController {
 
     batteryProductData.addPolicy.value(msg.value)(msg.sender, now + 1 years, now + 30 days, monthlyPayment, batteryProductData.maxPayout(), totalPrice, itemId, false, false);
 
-    Insured(deviceBrand, msg.value);
+    Insured(deviceBrand, deviceYear, wearLevel, region, msg.value);
   }
 
   function confirmPolicy(address policyHolder) onlyController updateProductDataReference {
@@ -98,7 +98,7 @@ contract BatteryProductController {
 
     batteryProductData.claim(msg.sender, maxPayout);
 
-    Claimed(maxPayout);
+    Claimed(maxPayout, wearLevel);
 
   }
 
