@@ -1,8 +1,26 @@
 pragma solidity ^0.4.13;
 
-import "./helpers/Ownable.sol";
-import "./interfaces/IEventEmitter.sol";
-import "./interfaces/IContractManager.sol";
+contract Ownable {
+  address public owner;
+
+  function Ownable() public {
+    owner = msg.sender;
+  }
+
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));      
+    owner = newOwner;
+  }
+}
+
+contract IContractManager {
+	function getContract(string name) constant public returns (address contractAddress);
+}
 
 contract ContractManager is Ownable, IContractManager {
 	mapping (string => address) contracts;
@@ -35,3 +53,16 @@ contract ContractManager is Ownable, IContractManager {
 		logger.info("[ContractManager] event emiter is changed");
 	}
 }
+
+contract IEventEmitter {
+
+    function info(string message) public;
+    function info(string message, string param) public;
+
+    function warning(string message) public;
+    function warning(string message, string param) public;
+
+    function error(string message) public;
+    function error(string message, string param) public;
+}
+

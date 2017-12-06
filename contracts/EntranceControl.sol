@@ -15,16 +15,20 @@ contract EntranceControl is Ownable {
         AddedExecutor(msg.sender);
     }
     
-    function addExecutor(address _executor) public onlyOwner{
-        canExecute[_executor] = true;
+    function addExecutor(address executor) public onlyOwner {
+        require(!canExecute[executor]);
+
+        canExecute[executor] = true;
         executorsCount++;
-        AddedExecutor(_executor);
+        AddedExecutor(executor);
     }
     
-    function removeExecutor(address _executor) public onlyOwner{
-        canExecute[_executor] = false;
+    function removeExecutor(address executor) public onlyOwner {
+        require(canExecute[executor]);
+
+        canExecute[executor] = false;
         executorsCount--;
-        RemovedExecutor(_executor);
+        RemovedExecutor(executor);
     }
     
     modifier onlyCanExecute() {

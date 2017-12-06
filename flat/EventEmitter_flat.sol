@@ -16,7 +16,6 @@ contract Ownable {
     require(newOwner != address(0));      
     owner = newOwner;
   }
-
 }
 
 contract EntranceControl is Ownable {
@@ -32,16 +31,20 @@ contract EntranceControl is Ownable {
         AddedExecutor(msg.sender);
     }
     
-    function addExecutor(address _executor) public onlyOwner{
-        canExecute[_executor] = true;
+    function addExecutor(address executor) public onlyOwner {
+        require(!canExecute[executor]);
+
+        canExecute[executor] = true;
         executorsCount++;
-        AddedExecutor(_executor);
+        AddedExecutor(executor);
     }
     
-    function removeExecutor(address _executor) public onlyOwner{
-        canExecute[_executor] = false;
+    function removeExecutor(address executor) public onlyOwner {
+        require(canExecute[executor]);
+
+        canExecute[executor] = false;
         executorsCount--;
-        RemovedExecutor(_executor);
+        RemovedExecutor(executor);
     }
     
     modifier onlyCanExecute() {
@@ -50,26 +53,49 @@ contract EntranceControl is Ownable {
     }
 }
 
-contract EventEmitter is EntranceControl{
-  event Info(address indexed sender, string msg);
-  event Warning(address indexed sender, string msg);
-  event Error(address indexed sender, string msg);
+contract IEventEmitter {
 
-  function EventEmitter() public {
-    Info(this, "Initialized");
-  }
+    function info(string message) public;
+    function info(string message, string param) public;
 
-  function info(string _msg) public onlyCanExecute{
-   Info(msg.sender, _msg);
-  }
-  
-  function warning(string _msg) public onlyCanExecute{
-   Warning(msg.sender, _msg);
-  }
-  
-  function error(string _msg) public onlyCanExecute{
-   Error(msg.sender, _msg);
-  }
+    function warning(string message) public;
+    function warning(string message, string param) public;
 
+    function error(string message) public;
+    function error(string message, string param) public;
+}
+
+contract EventEmitter is EntranceControl, IEventEmitter {
+    event Info(address indexed sender, string msg, string param);
+    event Warning(address indexed sender, string msg, string param);
+    event Error(address indexed sender, string msg, string param);
+
+    function EventEmitter() public {
+        Info(this, "Initialized", "");
+    }
+
+    function info(string message) public onlyCanExecute { 
+        Info(msg.sender, message, "");
+    }
+
+    function info(string message, string param) public onlyCanExecute {
+        Info(msg.sender, message, param);
+    }
+
+    function warning(string message) public onlyCanExecute {
+        Warning(msg.sender, message, "");
+    }
+
+    function warning(string message, string param) public onlyCanExecute {
+        Warning(msg.sender, message, param);
+    }
+
+    function error(string message) public onlyCanExecute {
+        Error(msg.sender, message, "");
+    }
+
+    function error(string message, string param) public onlyCanExecute {
+        Error(msg.sender, message, param);
+    }
 }
 

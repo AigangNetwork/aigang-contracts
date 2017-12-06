@@ -1,9 +1,8 @@
 pragma solidity ^0.4.13;
 
-// import "./PolicyInvestable.sol";
 import "./../ContractManager.sol";
 
-contract BatteryProductData {//is PolicyInvestable { 
+contract BatteryProductData {
 
   // Investment data
   mapping (address => uint) public investors;
