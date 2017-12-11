@@ -7,3 +7,5 @@ Setup:
 - Deploy EventEmitter
 - Deploy ContractManger
 - Set EventEmitter.addExecutor with parameter ContractManger address
+- Add to ContractManager:
+        "EventEmitter" address;

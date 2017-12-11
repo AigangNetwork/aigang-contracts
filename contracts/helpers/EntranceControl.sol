@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-import "./helpers/Ownable.sol";
+import "./Ownable.sol";
 
 contract EntranceControl is Ownable {
     uint public executorsCount = 0;

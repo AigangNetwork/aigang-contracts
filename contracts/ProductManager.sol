@@ -1,65 +1,49 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.17;
 
 import "./helpers/Ownable.sol";
 
-// Ownable sets the contract creator as Owner. Ownership can be transferred.
 contract ProductManager is Ownable {
+
+	struct Product {
+		string name;
+		address location;
+		string description;
+		int8 status;  // -1 deleted, 0 not exist, 1 created, 2 ready for investment... 
+	}
+
+	bytes32[] public products;
+	mapping(bytes32 => Product) public productDetails;  
+
+	function add(bytes32 _id, string _name, address _address, string _description) public onlyOwner {	
+        require(!isProduct(_id));
+        
+		products.push(_id);
+
+        productDetails[_id] = Product(_name, _address, _description, 1);		
+	}
 	
-	bytes32[] allProducts;
-
-	function addProduct(bytes32 name) onlyOwner {
-		uint productIndex = IndexOf(allProducts, name);
-    
-        if(allProducts.length > 0) {
-		    require(productIndex < allProducts.length);
-        }
-
-		allProducts.push(name);
+	function update(bytes32 _id, string _name, address _address, string _description) public onlyOwner {	
+        require(isProduct(_id));
+        
+        productDetails[_id].name = _name;	
+        productDetails[_id].location = _address;
+        productDetails[_id].description = _description;
 	}
 
-	function removeProduct(bytes32 name) onlyOwner {
-		allProducts = RemoveByValue(allProducts, name);
+	function changeStatus(bytes32 _id, int8 _status) public onlyOwner {	   
+	    require(isProduct(_id));
+		productDetails[_id].status = _status;      
 	}
-
-	// ----------------
-	// Array Util function pasted inside, because you cannot pass string[] to external libarary 
-	// should be excluded to separate contract as soon as solidity supports needed functionality.
-
-	/** Finds the index of a given value in an array. */
-	function IndexOf(bytes32[] values, bytes32 value) internal returns(uint) {
-		uint i = 0;
-		if(values.length > 0) {
-		    while (values[i] == value && i < values.length) {
-     		  i++;
-     		}
+	
+	function isProduct(bytes32 _id) public view returns(bool) {   
+		if (productDetails[_id].status != 0) {
+			return true;
 		}
-		
-		return i;
-
+	    
+	    return false;
 	}
-
-	/** Removes the given value in an array. */
-	function RemoveByValue(bytes32[] values, bytes32 value) internal returns (bytes32[] valuesNew) {
-		uint i = IndexOf(values, value);
-
-		require(i < values.length);
-
-		return RemoveByIndex(values, i);
-	}
-
-	/** Removes the value at the given index in an array. */
-	function RemoveByIndex(bytes32[] values, uint index) internal returns (bytes32[] valuesNew) {
-		bytes32[] memory arrayNew = new bytes32[](values.length-1);
-		uint i = 0;
-
-		while (i<values.length-1) {
-			if(i == index) {
-				continue;
-			}
-		  	arrayNew[i] = values[i+1];
-		  	i++;
-		}
-		return arrayNew;
-
+	
+	function remove(bytes32 _id) public onlyOwner {   
+		return changeStatus(_id, -1);
 	}
 }

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-import "./EntranceControl.sol";
+import "./helpers/EntranceControl.sol";
 import "./interfaces/IEventEmitter.sol";
 
 contract EventEmitter is EntranceControl, IEventEmitter {

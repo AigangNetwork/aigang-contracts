@@ -35,6 +35,9 @@ contract BatteryProductData {
     bool confirmed;
   }
 
+  function BatteryProductData() public {
+    setInitialInsuranceParameters();
+  }
 
   /**
    * @dev Throws if called by any account other than the product controller.
@@ -44,8 +47,6 @@ contract BatteryProductData {
     require(msg.sender == baterryProductControllerAddress);
     _;
   }
-
-
 
   function addInvestment(address investor) payable onlyProductController {
     require(maxInvestmentCap > (totalInvestedAmount + msg.value));
@@ -91,9 +92,7 @@ contract BatteryProductData {
     policyHolder.transfer(payout);
   }
 
-  function BatteryProductData() {
-    setInitialInsuranceParameters();
-  }
+
 
   function setInitialInsuranceParameters() internal {
     // Device brand

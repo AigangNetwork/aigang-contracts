@@ -1,28 +1,34 @@
 pragma solidity ^0.4.13;
 
 import "./BatteryProductData.sol";
-import "./../ContractManager.sol";
+import "./../interfaces/IContractManager.sol";
+import "./../helpers/Ownable.sol";
 
-contract BatteryProductController { 
+contract BatteryProduct is Ownable { 
 
-  // Controller is used for updating value
-  address controllerAddress = 0x2033d81c062dE642976300c6eabCbA149e4372BE;
   // Contract manager contract.
-  ContractManager contractManagerAddress = ContractManager(0xca35b7d915458ef540ade6068dfe2f44e8fa733c);
-  // Battery product data contract taken from ContractManager
+  IContractManager contractManagerAddress = IContractManager(0xca35b7d915458ef540ade6068dfe2f44e8fa733c);
+
   BatteryProductData batteryProductData;
 
   event Insured(string deviceBrand, string deviceYear, string wearLevel, string region, uint insurancePrice);
   event Claimed(uint payout, uint wearLevel); 
   event Invested(uint amount);
 
+  // Controller is used for updating value
+  //address controllerAddress = 0x2033d81c062dE642976300c6eabCbA149e4372BE;
+
   /**
    * @dev Throws if called by any account other than the product controller.
    */
-  modifier onlyController() {
-    require(msg.sender == controllerAddress);
-    _;
-  }
+  // modifier onlyController() {
+  //   require(msg.sender == controllerAddress);
+  //   _;
+  // }
+
+    // function confirmPolicy(address policyHolder) onlyController updateProductDataReference {
+  //   batteryProductData.confirmPolicy(policyHolder);
+  // }
 
   modifier updateProductDataReference() {
     batteryProductData = BatteryProductData(contractManagerAddress.getContract("BatteryProductData"));
@@ -83,9 +89,7 @@ contract BatteryProductController {
     Insured(deviceBrand, deviceYear, wearLevel, region, msg.value);
   }
 
-  function confirmPolicy(address policyHolder) onlyController updateProductDataReference {
-    batteryProductData.confirmPolicy(policyHolder);
-  }
+
 
   function claim(uint wearLevel) updateProductDataReference {
     var (endDateTimestamp, claimed, confirmed, maxPayout) = batteryProductData.getPolicyData(msg.sender);
