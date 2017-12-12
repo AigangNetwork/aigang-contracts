@@ -15,11 +15,9 @@ contract InvestmentManager is Ownable, IInvestmentManager {
     IEventEmitter logger;
     IContractManager contractsManager;
 
-    string public EVENT_EMITTER  = "EventEmitter";
-
     function InvestmentManager(address _contractsManager, address _wallet) public {
         contractsManager = IContractManager(_contractsManager);
-        logger = IEventEmitter(contractsManager.getContract(EVENT_EMITTER));
+        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
         logger.info("Dependencies refreshed");
         wallet = IWallet(_wallet);
     }
@@ -49,7 +47,7 @@ contract InvestmentManager is Ownable, IInvestmentManager {
         uint256 balance = token.balanceOf(this);
 
         token.transfer(msg.sender, balance);
-        logger.info("Tokens are claimed", string(msg.sender.toBytes()));
+        logger.info("Tokens are claimed", bytes32(msg.sender));
     }
 
     /// @notice By default this contract should not accept ethers

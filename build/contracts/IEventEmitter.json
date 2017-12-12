@@ -1,0 +1,99 @@
+{
+  "contract_name": "IEventEmitter",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_message",
+          "type": "bytes32"
+        },
+        {
+          "name": "_param",
+          "type": "bytes32"
+        }
+      ],
+      "name": "warning",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_message",
+          "type": "bytes32"
+        }
+      ],
+      "name": "info",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_message",
+          "type": "bytes32"
+        }
+      ],
+      "name": "warning",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_message",
+          "type": "bytes32"
+        }
+      ],
+      "name": "error",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_message",
+          "type": "bytes32"
+        },
+        {
+          "name": "_param",
+          "type": "bytes32"
+        }
+      ],
+      "name": "info",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_message",
+          "type": "bytes32"
+        },
+        {
+          "name": "_param",
+          "type": "bytes32"
+        }
+      ],
+      "name": "error",
+      "outputs": [],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1513084636835
+}

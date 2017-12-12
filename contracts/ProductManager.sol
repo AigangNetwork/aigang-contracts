@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.15;
 
 import "./helpers/Ownable.sol";
 
@@ -35,7 +35,7 @@ contract ProductManager is Ownable {
 		productDetails[_id].status = _status;      
 	}
 	
-	function isProduct(bytes32 _id) public view returns(bool) {   
+	function isProduct(bytes32 _id) public constant returns(bool) {   
 		if (productDetails[_id].status != 0) {
 			return true;
 		}

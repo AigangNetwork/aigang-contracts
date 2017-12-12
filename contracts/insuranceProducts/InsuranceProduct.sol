@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.15;
 
 import "./../interfaces/IContractManager.sol";
 import "./../interfaces/IEventEmitter.sol";
