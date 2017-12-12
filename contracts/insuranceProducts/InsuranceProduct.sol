@@ -11,16 +11,16 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
   IContractManager contractsManager;
   IInvestmentManager investmentManager;
 
-  string public EVENT_EMITTER  = "EventEmitter";
+  bytes32 public EVENT_EMITTER  = "EventEmitter";
   IEventEmitter logger;
 
   function InsuranceProduct(address _contractsManager, address _investmentManager) public {
       contractsManager = IContractManager(_contractsManager);
+      
       logger = IEventEmitter(contractsManager.getContract(EVENT_EMITTER));
-      logger.info("Dependencies refreshed");
-
       investmentManager = IInvestmentManager(_investmentManager);
-
+      
+      logger.info("Dependencies refreshed");
       //refreshDependencies(_contractsManager);
   }
 
@@ -59,7 +59,7 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
     uint256 balance = token.balanceOf(this);
 
     token.transfer(msg.sender, balance);
-    logger.info("Tokens are claimed", string(msg.sender.toBytes()));
+    logger.info("Tokens are claimed", bytes32(msg.sender));
   }
 
   /// @notice By default this contract should not accept ethers
@@ -75,6 +75,3 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
   // }
 
 }
-
-
-"0": "string: 0xca35b7d915458ef540ade6068dfe2f44e8fa733c"

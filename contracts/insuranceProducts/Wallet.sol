@@ -3,20 +3,28 @@ pragma solidity ^0.4.13;
 import "./../helpers/Ownable.sol";
 import "./../helpers/ERC20.sol";
 import "./../helpers/EntranceControl.sol";
+import "./../interfaces/IContractManager.sol";
+import "./../interfaces/IEventEmitter.sol";
 
-contract Wallet is Ownable {
+contract Wallet is Ownable, EntranceControl {
+    IContractManager contractsManager;
+    IEventEmitter logger;
 
-    function Wallet() public {
+    function Wallet(address _contractsManager) public {
+        refreshDependencies(_contractsManager);
     }
 
     function deposit(uint value) public onlyCanExecute {   
         require(value > 0);                   
         this.transfer(value);
+        logger.info("[W] deposit", bytes32(value));
     }
 
     function withdraw(address _th, uint value) public onlyCanExecute {   
-        require(_th != address(0) && value > 0);                   
-        _th.send(value);
+        require(_th != address(0) && value > 0);  
+        logger.info("[W] withdraw req", bytes32(_th));                 
+        _th.transfer(value);
+        logger.info("[W] withdrawed", bytes32(value));
     }
 
 
@@ -38,11 +46,18 @@ contract Wallet is Ownable {
         uint256 balance = token.balanceOf(this);
 
         token.transfer(msg.sender, balance);
-        logger.info("Tokens are claimed", msg.sender);
+        logger.info("Tokens are claimed", bytes32(msg.sender));
     }
 
     /// @notice By default this contract should not accept ethers
     function() payable public {
         require(false);
+    }
+
+    function refreshDependencies(address _contractsManager) public onlyOwner {
+        require(_contractsManager != address(0));
+
+        contractsManager = IContractManager(_contractsManager);
+        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
     }
 }
