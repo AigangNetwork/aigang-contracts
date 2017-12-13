@@ -25,10 +25,8 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
   }
 
   // ----------------------------------       Investment logic
-  function invest() payable public {
-    require(msg.value > 0);
-
-    investmentManager.invest(msg.sender);
+  function invest() payable public returns (bool) { 
+    return investmentManager.invest(msg.sender);
   }
 
 

@@ -25,31 +25,31 @@ contract Ownable {
 }
 
 library Strings {
-    function toAsciiString(address x) public pure returns (string) {
-        bytes memory s = new bytes(40);
-        for (uint i = 0; i < 20; i++) {
-            byte b = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-            byte hi = byte(uint8(b) / 16);
-            byte lo = byte(uint8(b) - 16 * uint8(hi));
-            s[2*i] = char(hi);
-            s[2*i+1] = char(lo);            
-        }
-        return string(s);
-    }
+    // function toAsciiString(address x) constant public returns (string) {
+    //     bytes memory s = new bytes(40);
+    //     for (uint i = 0; i < 20; i++) {
+    //         byte b = byte(uint8(uint(x) / (2**(8*(19 - i)))));
+    //         byte hi = byte(uint8(b) / 16);
+    //         byte lo = byte(uint8(b) - 16 * uint8(hi));
+    //         s[2*i] = char(hi);
+    //         s[2*i+1] = char(lo);            
+    //     }
+    //     return string(s);
+    // }
 
-    function toBytes(address x) public pure returns (bytes b) {
-        b = new bytes(20);
-        for (uint i = 0; i < 20; i++) {
-            b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
-        }
-    }
+    // function toBytes(address x)  public returns (bytes b) {
+    //     b = new bytes(20);
+    //     for (uint i = 0; i < 20; i++) {
+    //         b[i] = byte(uint8(uint(x) / (2**(8*(19 - i)))));
+    //     }
+    // }
 
-    function char(byte b) public pure returns (byte c) {
-        if (b < 10) 
-        return byte(uint8(b) + 0x30);
-        else 
-        return byte(uint8(b) + 0x57);
-    }
+    // function char(byte b)  public constant returns (byte c) {
+    //     if (b < 10) 
+    //     return byte(uint8(b) + 0x30);
+    //     else 
+    //     return byte(uint8(b) + 0x57);
+    // }
 }
 
 contract IContractManager {
@@ -89,13 +89,13 @@ contract ContractManager is Ownable, IContractManager {
 }
 
 contract IEventEmitter {
-    function info(bytes32 message) public;
-    function info(bytes32 message, bytes32 param) public;
+    function info(bytes32 _message) public;
+    function info(bytes32 _message, bytes32 _param) public;
 
-    function warning(bytes32 message) public;
-    function warning(bytes32 message, bytes32 param) public;
+    function warning(bytes32 _message) public;
+    function warning(bytes32 _message, bytes32 _param) public;
 
-    function error(bytes32 message) public;
-    function error(bytes32 message, bytes32 param) public;
+    function error(bytes32 _message) public;
+    function error(bytes32 _message, bytes32 _param) public;
 }
 

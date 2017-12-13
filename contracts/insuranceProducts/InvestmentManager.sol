@@ -2,30 +2,59 @@ pragma solidity ^0.4.15;
 
 import "./../helpers/Ownable.sol";
 import "./../helpers/ERC20.sol";
-import "./../helpers/EntranceControl.sol";
-import "./../helpers/Strings.sol";
 import "./../interfaces/IEventEmitter.sol";
 import "./../interfaces/IContractManager.sol";
 import "./interfaces/IInvestmentManager.sol";
 import "./interfaces/IWallet.sol";
 
 contract InvestmentManager is Ownable, IInvestmentManager {
-    using Strings for address;
-    IWallet wallet;
-    IEventEmitter logger;
-    IContractManager contractsManager;
+    IWallet public wallet;
+    IEventEmitter public logger;
+    IContractManager public contractsManager;
+    address public insuranceProduct;
 
-    function InvestmentManager(address _contractsManager, address _wallet) public {
-        contractsManager = IContractManager(_contractsManager);
-        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
-        logger.info("Dependencies refreshed");
-        wallet = IWallet(_wallet);
+    mapping (address => uint) public investors;
+    uint public totalInvestorsCount;
+    uint public totalInvestedAmount;
+
+    uint public maxPayout;
+    uint public investmentsLimit;
+    uint32 public investmentsDeadlineTimeStamp;    
+
+    uint8 constant DECIMAL_PRECISION = 8;
+    uint24 constant ALLOWED_RETURN_INTERVAL_SEC = 24 * 60 * 60; // each 24 hours
+
+    modifier onlyInsuranceProduct() {
+        require(msg.sender == insuranceProduct);
+        _;
     }
 
-    function invest(address _th) payable public {
-        require(msg.value > 0);
+    function InvestmentManager(address _contractsManager, address _wallet, address _insuranceProduct) public {
+        contractsManager = IContractManager(_contractsManager);
+        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
+        wallet = IWallet(_wallet);
+        insuranceProduct = _insuranceProduct;
 
-        wallet.deposit(msg.value);    
+        maxPayout = 10 finney;   // 0.01 ETH
+        investmentsLimit = 1000 ether; //1000 ETH
+        investmentsDeadlineTimeStamp = uint32(now) + 90 days;
+    }
+
+    function invest(address _th) payable public onlyInsuranceProduct returns (bool) {
+        require(msg.value > 0);
+        require(!isInvestmentPeriodEnded());
+
+        investors[_th] = investors[_th] + msg.value;
+        totalInvestorsCount++;
+        totalInvestedAmount = totalInvestedAmount + msg.value;
+
+        wallet.deposit(msg.value);  
+        logger.info("[InvM]Invested", bytes32(_th));
+        return true;  
+    }
+
+    function isInvestmentPeriodEnded() constant public returns (bool) {
+        return (investmentsDeadlineTimeStamp < now);
     }
 
 

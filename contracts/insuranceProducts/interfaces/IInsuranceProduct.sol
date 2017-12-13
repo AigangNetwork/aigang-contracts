@@ -3,7 +3,7 @@ pragma solidity ^0.4.15;
 contract IInsuranceProduct { 
 
   // ----- Investment logic
-  function invest() payable public;
+  function invest() payable public returns (bool);
   function isInvestmentPeriodEnded() constant public returns (bool);
   function checkAvailableDividends() constant public returns (uint);
   function transferDividends() public returns (bool);
