@@ -5,8 +5,8 @@ contract IEventEmitter {
     function info2(bytes32 _message, bytes32 _param) public;
 
     function warning(bytes32 _message) public;
-    function warning(bytes32 _message, bytes32 _param) public;
+    function warning2(bytes32 _message, bytes32 _param) public;
 
     function error(bytes32 _message) public;
-    function error(bytes32 _message, bytes32 _param) public;
+    function error2(bytes32 _message, bytes32 _param) public;
 }
