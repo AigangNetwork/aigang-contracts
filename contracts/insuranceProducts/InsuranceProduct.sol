@@ -57,7 +57,7 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
     uint256 balance = token.balanceOf(this);
 
     token.transfer(msg.sender, balance);
-    logger.info("Tokens are claimed", bytes32(msg.sender));
+    logger.info2("Tokens are claimed", bytes32(msg.sender));
   }
 
   /// @notice By default this contract should not accept ethers

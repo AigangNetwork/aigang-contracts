@@ -16,7 +16,7 @@ contract EventEmitter is EntranceControl, IEventEmitter {
         Info(msg.sender, _message, "");
     }
 
-    function info(bytes32 _message, bytes32 _param) public onlyCanExecute {
+    function info2(bytes32 _message, bytes32 _param) public onlyCanExecute {
         Info(msg.sender, _message, _param);
     }
 
