@@ -6,12 +6,20 @@ Setup:
 
 - Deploy EventEmitter
 - Deploy ContractManger
+        - call SetContract: "EventEmitter" address;
 - Set EventEmitter.addExecutor with parameter ContractManger address
-- Add to ContractManager:
-        "EventEmitter" address;
+
 
 
 Product deployment
+
 - Deploy Wallet
-- Deploy InvestmentManager
+        - Call EventEmitter.addExecutor with parameter Wallet address
 - Deploy InsuranceProduct
+- Deploy InvestmentManager
+        - Call Wallet.CanExecute add InvestmentManager
+
+
+
+
+

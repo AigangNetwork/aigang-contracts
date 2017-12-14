@@ -73,60 +73,69 @@ contract Ownable {
   }
 }
 
-contract EntranceControl is Ownable {
-    uint public executorsCount = 0;
-    mapping (address => bool) public canExecute;
-   
-    event AddedExecutor(address _address);
-    event RemovedExecutor(address _address);
+contract IInvestmentManager { 
 
-    function EntranceControl() public {
-        canExecute[msg.sender] = true;
-        executorsCount++;
-        AddedExecutor(msg.sender);
-    }
-    
-    function addExecutor(address executor) public onlyOwner {
-        require(!canExecute[executor]);
-
-        canExecute[executor] = true;
-        executorsCount++;
-        AddedExecutor(executor);
-    }
-    
-    function removeExecutor(address executor) public onlyOwner {
-        require(canExecute[executor]);
-
-        canExecute[executor] = false;
-        executorsCount--;
-        RemovedExecutor(executor);
-    }
-    
-    modifier onlyCanExecute() {
-        require(canExecute[msg.sender]);
-        _;
-    }
+  // ----- Investment logic
+  function invest(address _th) payable public returns (bool);
+  // function isInvestmentPeriodEnded() constant public returns (bool);
+  // function checkAvailableDividends() constant public returns (uint);
+  // function transferDividends() public returns (bool);
+  // function calculateDividends() constant public returns (uint);
+  // function getFreeBalance() private returns (int);
+  // function getInvestorProportion() private returns (uint);
 }
 
-contract Wallet is Ownable, EntranceControl {
-    IContractManager contractsManager;
-    IEventEmitter logger;
+contract InvestmentManager is Ownable, IInvestmentManager {
+    IWallet public wallet;
+    IEventEmitter public logger;
+    IContractManager public contractsManager;
+    address public insuranceProduct;
 
-    function Wallet(address _contractsManager) public {
-        refreshDependencies(_contractsManager);
+    mapping (address => uint) public investors;
+    uint public totalInvestorsCount;
+    uint public totalInvestedAmount;
+
+    uint public maxPayout;
+    uint public investmentsLimit;
+    uint32 public investmentsDeadlineTimeStamp;    
+
+    uint8 constant DECIMAL_PRECISION = 8;
+    uint24 constant ALLOWED_RETURN_INTERVAL_SEC = 24 * 60 * 60; // each 24 hours
+
+    modifier onlyInsuranceProduct() {
+        require(msg.sender == insuranceProduct);
+        _;
     }
 
-    function deposit(uint value) public onlyCanExecute {   
-        require(value > 0);                   
-        this.transfer(value);
-        logger.info("[W] deposit", bytes32(value));
+    function InvestmentManager(address _contractsManager, address _wallet, address _insuranceProduct) public {
+        contractsManager = IContractManager(_contractsManager);
+        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
+        wallet = IWallet(_wallet);
+        insuranceProduct = _insuranceProduct;
+
+        logger.info("Dependencies refreshed");
+        
+      
+        maxPayout = 10 finney;   // 0.01 ETH
+        investmentsLimit = 1000 ether; //1000 ETH
+        investmentsDeadlineTimeStamp = uint32(now) + 90 days;
     }
 
-    function withdraw(address _th, uint value) public onlyCanExecute {   
-        require(_th != address(0) && value > 0);  
-        logger.info("[W] withdraw req", bytes32(_th));                 
-        _th.transfer(value);
-        logger.info("[W] withdrawed", bytes32(value));
+    function invest(address _th) payable public onlyInsuranceProduct returns (bool) {
+        require(msg.value > 0);
+        require(!isInvestmentPeriodEnded());
+
+        investors[_th] = investors[_th] + msg.value;
+        totalInvestorsCount++;
+        totalInvestedAmount = totalInvestedAmount + msg.value;
+
+        wallet.deposit(msg.value);  
+        logger.info("[InvM]Invested", bytes32(_th));
+        return true;  
+    }
+
+    function isInvestmentPeriodEnded() constant public returns (bool) {
+        return (investmentsDeadlineTimeStamp < now);
     }
 
 
@@ -155,13 +164,11 @@ contract Wallet is Ownable, EntranceControl {
     function() payable public {
         require(false);
     }
+}
 
-    function refreshDependencies(address _contractsManager) public onlyOwner {
-        require(_contractsManager != address(0));
-
-        contractsManager = IContractManager(_contractsManager);
-        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
-    }
+contract IWallet {
+    function deposit(uint value) public;
+    function withdraw(address _th, uint value) public;
 }
 
 contract IContractManager {
