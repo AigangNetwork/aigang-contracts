@@ -119,14 +119,14 @@ contract Wallet is Ownable, EntranceControl {
     function deposit(uint value) public onlyCanExecute {   
         require(value > 0);                   
         this.transfer(value);
-        logger.info("[W] deposit", bytes32(value));
+        logger.info2("[W] deposit", bytes32(value));
     }
 
     function withdraw(address _th, uint value) public onlyCanExecute {   
         require(_th != address(0) && value > 0);  
-        logger.info("[W] withdraw req", bytes32(_th));                 
+        logger.info2("[W] withdraw req", bytes32(_th));                 
         _th.transfer(value);
-        logger.info("[W] withdrawed", bytes32(value));
+        logger.info2("[W] withdrawed", bytes32(value));
     }
 
 
@@ -148,7 +148,7 @@ contract Wallet is Ownable, EntranceControl {
         uint256 balance = token.balanceOf(this);
 
         token.transfer(msg.sender, balance);
-        logger.info("Tokens are claimed", bytes32(msg.sender));
+        logger.info2("Tokens are claimed", bytes32(msg.sender));
     }
 
     /// @notice By default this contract should not accept ethers

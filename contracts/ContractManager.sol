@@ -15,14 +15,14 @@ contract ContractManager is Ownable, IContractManager {
 
 	function setContract(bytes32 name, address contractAddress) public onlyOwner {
 		contracts[name] = contractAddress;
-		logger.info("[CM] Contract address is set", name);
+		logger.info2("[CM] Contract address is set", name);
 	}
 
 	function removeContract(bytes32 name) public onlyOwner {
 		require(contracts[name] != 0);
 
 		contracts[name] = address(0);
-		logger.info("[CM] Contract address is removed", name);
+		logger.info2("[CM] Contract address is removed", name);
 	}
 
 	function getContract(bytes32 name) constant public returns (address contractAddress) {
@@ -33,6 +33,6 @@ contract ContractManager is Ownable, IContractManager {
 
 	function changeEventEmitter(address eventEmitter) public onlyOwner {
 		logger = IEventEmitter(eventEmitter);	
-		logger.info("[CM] Event emitter is changed", bytes32(eventEmitter));
+		logger.info2("[CM] Event emitter is changed", bytes32(eventEmitter));
 	}
 }
