@@ -49,7 +49,7 @@ contract InvestmentManager is Ownable, IInvestmentManager {
         totalInvestedAmount = totalInvestedAmount + msg.value;
 
         wallet.deposit(msg.value);  
-        logger.info("[InvM]Invested", bytes32(_th));
+        logger.info2("[InvM]Invested", bytes32(_th));
         return true;  
     }
 
