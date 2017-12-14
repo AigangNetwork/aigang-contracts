@@ -61,13 +61,15 @@ contract EntranceControl is Ownable {
 
 contract IEventEmitter {
     function info(bytes32 _message) public;
-    function info(bytes32 _message, bytes32 _param) public;
+    function info2(bytes32 _message, bytes32 _param) public;
 
     function warning(bytes32 _message) public;
-    function warning(bytes32 _message, bytes32 _param) public;
+    function warning2(bytes32 _message, bytes32 _param) public;
 
     function error(bytes32 _message) public;
-    function error(bytes32 _message, bytes32 _param) public;
+    function error2(bytes32 _message, bytes32 _param) public;
+
+    function available(address _tx) public constant returns (bool);
 }
 
 contract EventEmitter is EntranceControl, IEventEmitter {
@@ -83,15 +85,15 @@ contract EventEmitter is EntranceControl, IEventEmitter {
         Info(msg.sender, _message, "");
     }
 
-    function info(bytes32 _message, bytes32 _param) public onlyCanExecute {
+    function info2(bytes32 _message, bytes32 _param) public onlyCanExecute {
         Info(msg.sender, _message, _param);
     }
-
+    
     function warning(bytes32 _message) public onlyCanExecute {
         Warning(msg.sender, _message, "");
     }
 
-    function warning(bytes32 _message, bytes32 _param) public onlyCanExecute {
+    function warning2(bytes32 _message, bytes32 _param) public onlyCanExecute {
         Warning(msg.sender, _message, _param);
     }
 
@@ -99,8 +101,12 @@ contract EventEmitter is EntranceControl, IEventEmitter {
         Error(msg.sender, _message, "");
     }
 
-    function error(bytes32 _message, bytes32 _param) public onlyCanExecute {
+    function error2(bytes32 _message, bytes32 _param) public onlyCanExecute {
         Error(msg.sender, _message, _param);
+    }
+
+    function available(address _tx) public constant returns (bool) {
+       return canExecute[_tx];
     }
 }
 

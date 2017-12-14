@@ -9,4 +9,6 @@ contract IEventEmitter {
 
     function error(bytes32 _message) public;
     function error2(bytes32 _message, bytes32 _param) public;
+
+    function available(address _tx) public constant returns (bool);
 }

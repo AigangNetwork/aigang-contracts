@@ -35,4 +35,8 @@ contract EventEmitter is EntranceControl, IEventEmitter {
     function error2(bytes32 _message, bytes32 _param) public onlyCanExecute {
         Error(msg.sender, _message, _param);
     }
+
+    function available(address _tx) public constant returns (bool) {
+       return canExecute[_tx];
+    }
 }

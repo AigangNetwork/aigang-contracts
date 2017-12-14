@@ -5,8 +5,9 @@ import "./../helpers/ERC20.sol";
 import "./../helpers/EntranceControl.sol";
 import "./../interfaces/IContractManager.sol";
 import "./../interfaces/IEventEmitter.sol";
+import "./interfaces/IWallet.sol";
 
-contract Wallet is Ownable, EntranceControl {
+contract Wallet is Ownable, EntranceControl, IWallet {
     IContractManager contractsManager;
     IEventEmitter logger;
 
@@ -14,7 +15,7 @@ contract Wallet is Ownable, EntranceControl {
         refreshDependencies(_contractsManager);
     }
 
-    function deposit(uint value) public onlyCanExecute {   
+    function deposit(uint value) payable public onlyCanExecute {   
         require(value > 0);                   
         this.transfer(value);
         logger.info2("[W] deposit", bytes32(value));
@@ -59,5 +60,17 @@ contract Wallet is Ownable, EntranceControl {
 
         contractsManager = IContractManager(_contractsManager);
         logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
+    }
+
+     function selfCheck() constant public onlyOwner returns (bool) {
+        require(contractsManager.available());
+        require(contractsManager.getContract("EventEmitter") != address(0));
+
+        require(logger.available(this));
+        return(true);
+    }
+
+    function available(address _tx) public constant returns (bool) {
+       return canExecute[_tx];
     }
 }

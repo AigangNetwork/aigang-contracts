@@ -30,10 +30,7 @@ contract InvestmentManager is Ownable, IInvestmentManager {
     }
 
     function InvestmentManager(address _contractsManager, address _wallet, address _insuranceProduct) public {
-        contractsManager = IContractManager(_contractsManager);
-        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
-        wallet = IWallet(_wallet);
-        insuranceProduct = _insuranceProduct;
+        refreshDependencies(_contractsManager, _wallet, _insuranceProduct);
 
         maxPayout = 10 finney;   // 0.01 ETH
         investmentsLimit = 1000 ether; //1000 ETH
@@ -82,5 +79,26 @@ contract InvestmentManager is Ownable, IInvestmentManager {
     /// @notice By default this contract should not accept ethers
     function() payable public {
         require(false);
+    }
+
+    function refreshDependencies(address _contractsManager, address _wallet, address _insuranceProduct) public onlyOwner {
+        contractsManager = IContractManager(_contractsManager);
+        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
+        wallet = IWallet(_wallet);
+        insuranceProduct = _insuranceProduct;
+    }
+
+    function available(address _tx) public constant returns (bool) {
+       return _tx == insuranceProduct;
+    }
+
+    function selfCheck() constant public onlyOwner returns (bool) {
+        require(contractsManager.available());
+        require(contractsManager.getContract("EventEmitter") != address(0));
+
+        require(logger.available(this));
+        require(wallet.available(this));
+
+        return(true);
     }
 }

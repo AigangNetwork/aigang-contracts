@@ -108,7 +108,14 @@ contract EntranceControl is Ownable {
     }
 }
 
-contract Wallet is Ownable, EntranceControl {
+contract IWallet {
+    function deposit(uint value) public payable;
+    function withdraw(address _th, uint value) public;
+
+    function available(address _tx) public constant returns (bool);
+}
+
+contract Wallet is Ownable, EntranceControl, IWallet {
     IContractManager contractsManager;
     IEventEmitter logger;
 
@@ -116,7 +123,7 @@ contract Wallet is Ownable, EntranceControl {
         refreshDependencies(_contractsManager);
     }
 
-    function deposit(uint value) public onlyCanExecute {   
+    function deposit(uint value) payable public onlyCanExecute {   
         require(value > 0);                   
         this.transfer(value);
         logger.info2("[W] deposit", bytes32(value));
@@ -162,20 +169,35 @@ contract Wallet is Ownable, EntranceControl {
         contractsManager = IContractManager(_contractsManager);
         logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
     }
+
+     function selfCheck() constant public onlyOwner returns (bool) {
+        require(contractsManager.available());
+        require(contractsManager.getContract("EventEmitter") != address(0));
+
+        require(logger.available(this));
+        return(true);
+    }
+
+    function available(address _tx) public constant returns (bool) {
+       return canExecute[_tx];
+    }
 }
 
 contract IContractManager {
-	function getContract(bytes32 name) constant public returns (address contractAddress);
+	function getContract(bytes32 name) constant public returns (address);
+	function available() public constant returns (bool);
 }
 
 contract IEventEmitter {
     function info(bytes32 _message) public;
-    function info(bytes32 _message, bytes32 _param) public;
+    function info2(bytes32 _message, bytes32 _param) public;
 
     function warning(bytes32 _message) public;
-    function warning(bytes32 _message, bytes32 _param) public;
+    function warning2(bytes32 _message, bytes32 _param) public;
 
     function error(bytes32 _message) public;
-    function error(bytes32 _message, bytes32 _param) public;
+    function error2(bytes32 _message, bytes32 _param) public;
+
+    function available(address _tx) public constant returns (bool);
 }
 

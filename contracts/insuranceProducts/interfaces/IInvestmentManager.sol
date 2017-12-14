@@ -10,4 +10,6 @@ contract IInvestmentManager {
   // function calculateDividends() constant public returns (uint);
   // function getFreeBalance() private returns (int);
   // function getInvestorProportion() private returns (uint);
+
+   function available(address _tx) public constant returns (bool);
 }

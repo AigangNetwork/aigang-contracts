@@ -31,14 +31,6 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
 
 
 
-
-
-
-
-
-
-
-
   /////////
   // Safety Methods
   //////////

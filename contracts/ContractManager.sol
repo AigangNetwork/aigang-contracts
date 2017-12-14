@@ -1,7 +1,6 @@
 pragma solidity ^0.4.15;
 
 import "./helpers/Ownable.sol";
-import "./helpers/Strings.sol";
 import "./interfaces/IEventEmitter.sol";
 import "./interfaces/IContractManager.sol";
 
@@ -25,7 +24,7 @@ contract ContractManager is Ownable, IContractManager {
 		logger.info2("[CM] Contract address is removed", name);
 	}
 
-	function getContract(bytes32 name) constant public returns (address contractAddress) {
+	function getContract(bytes32 name) constant public returns (address) {
 		require(contracts[name] != address(0));
 
 		return contracts[name];
@@ -35,4 +34,8 @@ contract ContractManager is Ownable, IContractManager {
 		logger = IEventEmitter(eventEmitter);	
 		logger.info2("[CM] Event emitter is changed", bytes32(eventEmitter));
 	}
+
+	function available() public constant returns (bool) {
+       return true;
+    }
 }

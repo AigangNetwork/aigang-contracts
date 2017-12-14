@@ -83,6 +83,8 @@ contract IInvestmentManager {
   // function calculateDividends() constant public returns (uint);
   // function getFreeBalance() private returns (int);
   // function getInvestorProportion() private returns (uint);
+
+   function available(address _tx) public constant returns (bool);
 }
 
 contract InvestmentManager is Ownable, IInvestmentManager {
@@ -108,14 +110,8 @@ contract InvestmentManager is Ownable, IInvestmentManager {
     }
 
     function InvestmentManager(address _contractsManager, address _wallet, address _insuranceProduct) public {
-        contractsManager = IContractManager(_contractsManager);
-        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
-        wallet = IWallet(_wallet);
-        insuranceProduct = _insuranceProduct;
+        refreshDependencies(_contractsManager, _wallet, _insuranceProduct);
 
-        logger.info("Dependencies refreshed");
-        
-      
         maxPayout = 10 finney;   // 0.01 ETH
         investmentsLimit = 1000 ether; //1000 ETH
         investmentsDeadlineTimeStamp = uint32(now) + 90 days;
@@ -130,7 +126,7 @@ contract InvestmentManager is Ownable, IInvestmentManager {
         totalInvestedAmount = totalInvestedAmount + msg.value;
 
         wallet.deposit(msg.value);  
-        logger.info("[InvM]Invested", bytes32(_th));
+        logger.info2("[InvM]Invested", bytes32(_th));
         return true;  
     }
 
@@ -157,32 +153,58 @@ contract InvestmentManager is Ownable, IInvestmentManager {
         uint256 balance = token.balanceOf(this);
 
         token.transfer(msg.sender, balance);
-        logger.info("Tokens are claimed", bytes32(msg.sender));
+        logger.info2("Tokens are claimed", bytes32(msg.sender));
     }
 
     /// @notice By default this contract should not accept ethers
     function() payable public {
         require(false);
     }
+
+    function refreshDependencies(address _contractsManager, address _wallet, address _insuranceProduct) public onlyOwner {
+        contractsManager = IContractManager(_contractsManager);
+        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
+        wallet = IWallet(_wallet);
+        insuranceProduct = _insuranceProduct;
+    }
+
+    function available(address _tx) public constant returns (bool) {
+       return _tx == insuranceProduct;
+    }
+
+    function selfCheck() constant public onlyOwner returns (bool) {
+        require(contractsManager.available());
+        require(contractsManager.getContract("EventEmitter") != address(0));
+
+        require(logger.available(this));
+        require(wallet.available(this));
+
+        return(true);
+    }
 }
 
 contract IWallet {
-    function deposit(uint value) public;
+    function deposit(uint value) public payable;
     function withdraw(address _th, uint value) public;
+
+    function available(address _tx) public constant returns (bool);
 }
 
 contract IContractManager {
-	function getContract(bytes32 name) constant public returns (address contractAddress);
+	function getContract(bytes32 name) constant public returns (address);
+	function available() public constant returns (bool);
 }
 
 contract IEventEmitter {
     function info(bytes32 _message) public;
-    function info(bytes32 _message, bytes32 _param) public;
+    function info2(bytes32 _message, bytes32 _param) public;
 
     function warning(bytes32 _message) public;
-    function warning(bytes32 _message, bytes32 _param) public;
+    function warning2(bytes32 _message, bytes32 _param) public;
 
     function error(bytes32 _message) public;
-    function error(bytes32 _message, bytes32 _param) public;
+    function error2(bytes32 _message, bytes32 _param) public;
+
+    function available(address _tx) public constant returns (bool);
 }
 
