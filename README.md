@@ -2,6 +2,14 @@
 
 Aigang Smart Contracts for our Insurance Protocol
 
+## Auto-deployment commands:
+   truffle compile
+
+   # To testrpc
+        truffle migrate
+   # To Ropsten Network:
+        mnemonic="accountPhrase" apiKey="infuraApiKey" truffle migrate --network ropsten
+
 ## Setup
 
 - Deploy EventEmitter
