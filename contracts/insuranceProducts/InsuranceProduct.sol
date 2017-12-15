@@ -26,7 +26,7 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
 
   // ----------------------------------       Investment logic
   function invest() payable public returns (bool) { 
-    return investmentManager.invest(msg.sender);
+    return investmentManager.invest(msg.sender, msg.value);
   }
 
 
@@ -35,10 +35,6 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
   // Safety Methods
   //////////
 
-  /// @notice This method can be used by the controller to extract mistakenly
-  ///  sent tokens to this contract.
-  /// @param _token The address of the token contract that you want to recover
-  ///  set to 0 in case you want to extract ether.
   function claimTokens(address _token) public onlyOwner {
     if (_token == 0x0) {      
         msg.sender.transfer(this.balance);
@@ -52,7 +48,7 @@ contract InsuranceProduct is Ownable, IInsuranceProduct {
     logger.info2("Tokens are claimed", bytes32(msg.sender));
   }
 
-  /// @notice By default this contract should not accept ethers
+  /// By default this contract should not accept ethers
   function() payable public {
     require(false);
   }

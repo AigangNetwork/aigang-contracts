@@ -2,11 +2,33 @@
   "contract_name": "IInvestmentManager",
   "abi": [
     {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "_tx",
+          "type": "address"
+        }
+      ],
+      "name": "available",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
       "constant": false,
       "inputs": [
         {
           "name": "_th",
           "type": "address"
+        },
+        {
+          "name": "_value",
+          "type": "uint256"
         }
       ],
       "name": "invest",
@@ -23,5 +45,5 @@
   "unlinked_binary": "0x",
   "networks": {},
   "schema_version": "0.0.5",
-  "updated_at": 1513255297789
+  "updated_at": 1513340018020
 }

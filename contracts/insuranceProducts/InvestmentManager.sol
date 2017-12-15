@@ -8,10 +8,15 @@ import "./interfaces/IInvestmentManager.sol";
 import "./interfaces/IWallet.sol";
 
 contract InvestmentManager is Ownable, IInvestmentManager {
+    bytes32 public EVENT_EMITTER  = "EventEmitter";
+    uint8 constant DECIMAL_PRECISION = 8;
+    uint24 constant ALLOWED_RETURN_INTERVAL_SEC = 24 * 60 * 60; // each 24 hours
+
     IWallet public wallet;
     IEventEmitter public logger;
     IContractManager public contractsManager;
     address public insuranceProduct;
+
 
     mapping (address => uint) public investors;
     uint public totalInvestorsCount;
@@ -21,8 +26,6 @@ contract InvestmentManager is Ownable, IInvestmentManager {
     uint public investmentsLimit;
     uint32 public investmentsDeadlineTimeStamp;    
 
-    uint8 constant DECIMAL_PRECISION = 8;
-    uint24 constant ALLOWED_RETURN_INTERVAL_SEC = 24 * 60 * 60; // each 24 hours
 
     modifier onlyInsuranceProduct() {
         require(msg.sender == insuranceProduct);
@@ -37,15 +40,15 @@ contract InvestmentManager is Ownable, IInvestmentManager {
         investmentsDeadlineTimeStamp = uint32(now) + 90 days;
     }
 
-    function invest(address _th) payable public onlyInsuranceProduct returns (bool) {
-        require(msg.value > 0);
+    function invest(address _th, uint _value) payable public onlyInsuranceProduct returns (bool) {
+        require(_value > 0);
         require(!isInvestmentPeriodEnded());
 
-        investors[_th] = investors[_th] + msg.value;
+        investors[_th] = investors[_th] + _value;
         totalInvestorsCount++;
-        totalInvestedAmount = totalInvestedAmount + msg.value;
+        totalInvestedAmount = totalInvestedAmount + _value;
 
-        wallet.deposit(msg.value);  
+        wallet.transfer(_value);  
         logger.info2("[InvM]Invested", bytes32(_th));
         return true;  
     }
@@ -59,12 +62,8 @@ contract InvestmentManager is Ownable, IInvestmentManager {
     // Safety Methods
     //////////
 
-    /// @notice This method can be used by the controller to extract mistakenly
-    ///  sent tokens to this contract.
-    /// @param _token The address of the token contract that you want to recover
-    ///  set to 0 in case you want to extract ether.
     function claimTokens(address _token) public onlyOwner {
-        if (_token == 0x0) {      
+        if (_token == 0x0) {    // set to 0 in case you want to extract ether.   
             msg.sender.transfer(this.balance);
             return;
         }
@@ -76,14 +75,14 @@ contract InvestmentManager is Ownable, IInvestmentManager {
         logger.info2("Tokens are claimed", bytes32(msg.sender));
     }
 
-    /// @notice By default this contract should not accept ethers
+    /// By default this contract should not accept ethers
     function() payable public {
         require(false);
     }
 
     function refreshDependencies(address _contractsManager, address _wallet, address _insuranceProduct) public onlyOwner {
         contractsManager = IContractManager(_contractsManager);
-        logger = IEventEmitter(contractsManager.getContract("EventEmitter"));
+        logger = IEventEmitter(contractsManager.getContract(EVENT_EMITTER));
         wallet = IWallet(_wallet);
         insuranceProduct = _insuranceProduct;
     }
@@ -94,11 +93,16 @@ contract InvestmentManager is Ownable, IInvestmentManager {
 
     function selfCheck() constant public onlyOwner returns (bool) {
         require(contractsManager.available());
-        require(contractsManager.getContract("EventEmitter") != address(0));
+        require(contractsManager.getContract(EVENT_EMITTER) != address(0));
 
         require(logger.available(this));
         require(wallet.available(this));
 
         return(true);
+    }
+
+    // Method is used for Remix IDE easier debuging
+    function getBalance() public constant returns (uint) {
+        return this.balance; 
     }
 }
