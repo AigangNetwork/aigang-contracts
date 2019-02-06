@@ -1,35 +1,40 @@
 pragma solidity ^0.4.23;
 
-// import "./utils/OwnedWithExecutor.sol";
-// import "./interfaces/IAddressManager.sol";
+ import "./utils/OwnedWithExecutor.sol";
+ import "./interfaces/IAddressManager.sol";
 
-// contract AddressManager is Ownable, IAddressManager {
-// 	mapping (bytes32 => address) contracts;
+ contract AddressManager is Owned, IAddressManager {
+	
+	struct Address {
+		address contractAddress;
+        uint created;
+		uint8 status;
+    }
 
+	event Added(uint _typeId, address _contractAddress);
+	event ChangedStatus(uint _typeId, uint _index, uint8 _status);
+	  
+	mapping (uint => Address[]) public contracts;
 
-// 	function AddressManager(address eventEmitter) public {
+	function add(uint _typeId, address _contractAddress) public onlyAllowed {
+		contracts[_typeId].push(Address(_contractAddress, now, 0));
 
-// 	}
+        emit Added(_typeId, _contractAddress);
+	}
 
-// 	function setContract(bytes32 name, address contractAddress) public onlyOwner {
-// 		contracts[name] = contractAddress;
-// 	}
+	function get(uint _typeId, uint _index) public view returns(address, uint, uint8){
+        return (contracts[_typeId][_index].contractAddress,
+				contracts[_typeId][_index].created,
+				contracts[_typeId][_index].status);
+    }
 
-// 	function removeContract(bytes32 name) public onlyOwner {
-// 		require(contracts[name] != 0);
+	function getLength(uint _typeId) public view returns(uint) {
+		return contracts[_typeId].length;
+	}
 
-// 		contracts[name] = address(0);
-// 	}
+	function changeStatus(uint _typeId, uint _index, uint8 _status) public onlyAllowed{
+        contracts[_typeId][_index].status = _status;
 
-// 	function getContract(bytes32 name) constant public returns (address) {
-// 		require(contracts[name] != address(0));
-
-// 		return contracts[name];
-// 	}
-
-
-
-// 	function available() public constant returns (bool) {
-//        return true;
-//     }
-// }
+		emit ChangedStatus(_typeId, _index, _status);
+    }
+}

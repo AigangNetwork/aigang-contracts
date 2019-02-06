@@ -9,11 +9,11 @@ contract Pools is Owned {
     using SafeMath for uint;  
 
     event Initialize(address _token);
-    event PoolAdded(bytes32 _id);
-    event PoolDestinationUpdated(bytes32 _id);
-    event ContributionAdded(bytes32 _poolId, bytes32 _contributionId);
-    event PoolStatusChange(bytes32 _poolId, PoolStatus _oldStatus, PoolStatus _newStatus);
-    event Paidout(bytes32 _poolId, bytes32 _contributionId);
+    event PoolAdded(uint _id);
+    event PoolDestinationUpdated(uint _id);
+    event ContributionAdded(address _from, uint _poolId, uint _contributionId);
+    event PoolStatusChange(uint _poolId, PoolStatus _oldStatus, PoolStatus _newStatus);
+    event Paidout(uint _contributionId);
     event Withdraw(uint _amount);
     
     struct Pool {  
@@ -26,18 +26,15 @@ contract Pools is Owned {
         uint amountDistributing;
         uint paidout;
         address prizeCalculator;
-        mapping(bytes32 => Contribution) contributions;
-    }
-    
-    struct Contribution {  
-        address owner;
-        uint amount;
-        uint paidout;
+        uint[] contributions;
     }
 
-    struct ContributionIndex {    
-        bytes32 poolId;
-        bytes32 contributionId;
+    struct Contribution { 
+        uint id; 
+        uint poolId;
+        uint amount;
+        uint paidout;
+        address owner;
     }
     
     enum PoolStatus {
@@ -53,9 +50,12 @@ contract Pools is Owned {
     bool public paused = true;
     address public token;
     uint public totalPools;
+    uint public POOL_ID;
+    uint public CONTRIBUTION_ID;
     
-    mapping(bytes32 => Pool) public pools;
-    mapping(address => ContributionIndex[]) public walletPools;
+    mapping(uint => Pool) public pools;
+    mapping(uint => Contribution) public contributions;
+    mapping(address => uint[]) public myContributions;
 
     modifier contractNotPaused() {
         require(paused == false, "Contract is paused");
@@ -73,7 +73,9 @@ contract Pools is Owned {
         emit Initialize(_token);
     }
 
-    function addPool(bytes32 _id, 
+    
+// TODO: create update function
+    function addPool(
             address _destination, 
             uint _contributionStartUtc, 
             uint _contributionEndUtc, 
@@ -81,23 +83,24 @@ contract Pools is Owned {
             address _prizeCalculator) 
         external 
         onlyOwnerOrSuperOwner 
-        contractNotPaused {
+        contractNotPaused 
+        returns (uint){
         
-        if (pools[_id].status == PoolStatus.NotSet) { // do not increase if update
-            totalPools++;
-        } 
+        uint id = getPoolId();
+
+        totalPools++;
+        pools[id].contributionStartUtc = _contributionStartUtc;
+        pools[id].contributionEndUtc = _contributionEndUtc;
+        pools[id].destination = _destination;
+        pools[id].status = PoolStatus.Active;
+        pools[id].amountLimit = _amountLimit;
+        pools[id].prizeCalculator = _prizeCalculator;
         
-        pools[_id].contributionStartUtc = _contributionStartUtc;
-        pools[_id].contributionEndUtc = _contributionEndUtc;
-        pools[_id].destination = _destination;
-        pools[_id].status = PoolStatus.Active;
-        pools[_id].amountLimit = _amountLimit;
-        pools[_id].prizeCalculator = _prizeCalculator;
-        
-        emit PoolAdded(_id);
+        emit PoolAdded(id);
+        return id;
     }
 
-    function updateDestination(bytes32 _id, 
+    function updateDestination(uint _id, 
             address _destination) 
         external 
         onlyOwnerOrSuperOwner 
@@ -108,101 +111,125 @@ contract Pools is Owned {
         emit PoolDestinationUpdated(_id);
     }
     
-    function setPoolStatus(bytes32 _poolId, PoolStatus _status) public onlyOwnerOrSuperOwner {
+    function setPoolStatus(uint _poolId, PoolStatus _status) public onlyOwnerOrSuperOwner {
         require(pools[_poolId].status != PoolStatus.NotSet, "pool should be initialized");
         emit PoolStatusChange(_poolId,pools[_poolId].status, _status);
         pools[_poolId].status = _status;
     }
     
     // This method will be called for returning money when canceled or set everyone to take rewards by formula
-    function setPoolAmountDistributing(bytes32 _poolId, PoolStatus _poolStatus, uint _amountDistributing) external onlyOwnerOrSuperOwner {
+    function setPoolAmountDistributing(uint _poolId, PoolStatus _poolStatus, uint _amountDistributing) external onlyOwnerOrSuperOwner {
         setPoolStatus(_poolId, _poolStatus);
         pools[_poolId].amountDistributing = _amountDistributing;
     }
 
     /// Called by token contract after Approval: this.TokenInstance.methods.approveAndCall()
-    // _data = poolId(32),contributionId(32)
+    // _data = poolId
+    // TODO Data only poolId as UINT
     function receiveApproval(address _from, uint _amountOfTokens, address _token, bytes _data) 
             external 
             senderIsToken
             contractNotPaused {    
         require(_amountOfTokens > 0, "amount should be > 0");
         require(_from != address(0), "not valid from");
-        require(_data.length == 64, "not valid _data length");
       
-        bytes32 poolIdString = bytesToFixedBytes32(_data,0);
-        bytes32 contributionIdString = bytesToFixedBytes32(_data,32);
+        uint poolId = bytesToUint(_data);
         
         // Validate pool and Contribution
-        require(pools[poolIdString].status == PoolStatus.Active, "Status should be active");
-        require(pools[poolIdString].contributionStartUtc < now, "Contribution is not started");    
-        require(pools[poolIdString].contributionEndUtc > now, "Contribution is ended"); 
-        require(pools[poolIdString].contributions[contributionIdString].amount == 0, 'Contribution duplicated');
-        require(pools[poolIdString].amountLimit == 0 ||
-                pools[poolIdString].amountLimit >= pools[poolIdString].amountCollected.add(_amountOfTokens), "Contribution limit reached"); 
+        require(pools[poolId].status == PoolStatus.Active, "Status should be active");
+        require(pools[poolId].contributionStartUtc < now, "Contribution is not started");    
+        require(pools[poolId].contributionEndUtc > now, "Contribution is ended"); 
+        require(pools[poolId].amountLimit == 0 ||
+                pools[poolId].amountLimit >= pools[poolId].amountCollected.add(_amountOfTokens), "Contribution limit reached"); 
         
         // Transfer tokens from sender to this contract
         require(IERC20(_token).transferFrom(_from, address(this), _amountOfTokens), "Tokens transfer failed.");
 
-        walletPools[_from].push(ContributionIndex(poolIdString, contributionIdString));
-        pools[poolIdString].amountCollected = pools[poolIdString].amountCollected.add(_amountOfTokens); 
-        pools[poolIdString].contributions[contributionIdString].owner = _from;
-        pools[poolIdString].contributions[contributionIdString].amount = _amountOfTokens;
+        pools[poolId].amountCollected = pools[poolId].amountCollected.add(_amountOfTokens);
+        
+        uint contributionId = getContributionId();
+        pools[poolId].contributions.push(contributionId);
 
-        emit ContributionAdded(poolIdString, contributionIdString);
+        contributions[contributionId].id = contributionId;
+        contributions[contributionId].poolId = poolId;
+        contributions[contributionId].amount = _amountOfTokens;
+        contributions[contributionId].owner = _from;
+
+        myContributions[_from].push(contributionId);
+
+        emit ContributionAdded(_from, poolId, contributionId);
     }
     
-    function transferToDestination(bytes32 _poolId) external onlyOwnerOrSuperOwner {
+    function transferToDestination(uint _poolId) external onlyOwnerOrSuperOwner {
         assert(IERC20(token).transfer(pools[_poolId].destination, pools[_poolId].amountCollected));
         setPoolStatus(_poolId,PoolStatus.Funding);
     }
     
-    function payout(bytes32 _poolId, bytes32 _contributionId) public contractNotPaused {
-        require(pools[_poolId].status == PoolStatus.Distributing, "Pool should be Distributing");
-        require(pools[_poolId].amountDistributing > pools[_poolId].paidout, "Pool should be not empty");
-        
-        Contribution storage con = pools[_poolId].contributions[_contributionId];
+    // TODO: removed PoolId from input 
+    function payout(uint _contributionId) public contractNotPaused {
+        Contribution storage con = contributions[_contributionId];
+        uint poolId = con.poolId;
+
+        require(pools[poolId].status == PoolStatus.Distributing, "Pool should be Distributing");
+        require(pools[poolId].amountDistributing > pools[poolId].paidout, "Pool should be not empty");
+        require(con.amount > 0, "Contribution not valid");
         require(con.paidout == 0, "Contribution already paidout");
+        require(con.owner != address(0), "Owner not valid"); 
         
-        IPrizeCalculator calculator = IPrizeCalculator(pools[_poolId].prizeCalculator);
+        
+        IPrizeCalculator calculator = IPrizeCalculator(pools[poolId].prizeCalculator);
     
         uint winAmount = calculator.calculatePrizeAmount(
-            pools[_poolId].amountDistributing,
-            pools[_poolId].amountCollected,  
+            pools[poolId].amountDistributing,
+            pools[poolId].amountCollected,  
             con.amount
         );
       
         assert(winAmount > 0);
         con.paidout = winAmount;
-        pools[_poolId].paidout = pools[_poolId].paidout.add(winAmount);
+        pools[poolId].paidout = pools[poolId].paidout.add(winAmount);
         assert(IERC20(token).transfer(con.owner, winAmount));
-        emit Paidout(_poolId, _contributionId);
+        emit Paidout(_contributionId);
     }
 
-    function refund(bytes32 _poolId, bytes32 _contributionId) public contractNotPaused {
-        require(pools[_poolId].status == PoolStatus.Canceled, "Pool should be canceled");
-        require(pools[_poolId].amountDistributing > pools[_poolId].paidout, "Pool should be not empty");
-        
-        Contribution storage con = pools[_poolId].contributions[_contributionId];
+    // TODO: removed PoolId from input 
+    function refund(uint _contributionId) public contractNotPaused {
+        Contribution storage con = contributions[_contributionId];
+        uint poolId = con.poolId;
+
+        require(pools[poolId].status == PoolStatus.Canceled, "Pool should be canceled");
+        require(pools[poolId].amountDistributing > pools[poolId].paidout, "Pool should be not empty");
         require(con.paidout == 0, "Contribution already paidout");        
         require(con.amount > 0, "Contribution not valid");   
         require(con.owner != address(0), "Owner not valid"); 
 
         con.paidout = con.amount;
-        pools[_poolId].paidout = pools[_poolId].paidout.add(con.amount);
+        pools[poolId].paidout = pools[poolId].paidout.add(con.amount);
         assert(IERC20(token).transfer(con.owner, con.amount));
 
-        emit Paidout(_poolId, _contributionId);
+        emit Paidout(_contributionId);
     }
 
     //////////
     // Views
     //////////
-    function getContribution(bytes32 _poolId, bytes32 _contributionId) public view returns(address, uint, uint) {
-        return (pools[_poolId].contributions[_contributionId].owner,
-            pools[_poolId].contributions[_contributionId].amount,
-            pools[_poolId].contributions[_contributionId].paidout);
+    // TODO: removed PoolId from input 
+    function getContribution(uint _contributionId) public view returns(uint, uint, uint, uint, address) {
+        return (contributions[_contributionId].id,
+            contributions[_contributionId].poolId,
+            contributions[_contributionId].amount,
+            contributions[_contributionId].paidout,
+            contributions[_contributionId].owner);
     }
+
+    function getPoolContributionsLength(uint _poolId) public view returns(uint) {
+        return pools[_poolId].contributions.length;
+    }
+
+    function getPoolContribution(uint _poolId, uint index) public view returns (uint) {
+        return pools[_poolId].contributions[index];
+    }
+ 
 
     // ////////
     // Safety Methods
@@ -226,12 +253,20 @@ contract Pools is Owned {
         paused = _paused;
     }
 
-    function bytesToFixedBytes32(bytes memory b, uint offset) internal pure returns (bytes32) {
-        bytes32 out;
-
-        for (uint i = 0; i < 32; i++) {
-            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
+    function bytesToUint(bytes b) public pure returns(uint) {
+        uint256 number;
+        for(uint i=0;i<b.length;i++){
+            number = number + uint(b[i])*(2**(8*(b.length-(i+1))));
         }
-        return out;
+        
+        return number;
+    }
+
+    function getPoolId() private returns (uint) {
+        return POOL_ID = POOL_ID.add(1);
+    }
+
+     function getContributionId() private returns (uint) {
+        return CONTRIBUTION_ID = CONTRIBUTION_ID.add(1);
     }
 }

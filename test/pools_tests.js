@@ -5,7 +5,7 @@ var Pools = artifacts.require('./pools/Pools.sol')
 let tryCatch = require('./exceptions.js').tryCatch
 let errTypes = require('./exceptions.js').errTypes
 
-contract('Product', accounts => {
+contract('Pools', accounts => {
     let prizeCalculatorInstance
     let testTokenInstance
     let poolsInstance
@@ -70,12 +70,12 @@ contract('Product', accounts => {
           from: owner
         })
 
-        var poolId = "123"
+        var poolId = 1
         var contributionStartUtc = Date.now()
         var contributionEndUtc = contributionStartUtc + 1000
         var amountLimit = web3.toWei(12, 'ether')
 
-        await poolsInstance.addPool(poolId, destination, 
+        await poolsInstance.addPool(destination, 
           contributionStartUtc, contributionEndUtc, amountLimit, 
           prizeCalculatorInstance.address,
           {
@@ -100,7 +100,7 @@ contract('Product', accounts => {
     })
 
     describe('#status change', async function () {
-      var poolId = "123"
+      var poolId = "1"
       var contributionStartUtc = Date.now()
       var contributionEndUtc = contributionStartUtc + 1000
       var amountLimit = web3.toWei(12, 'ether')
@@ -114,7 +114,7 @@ contract('Product', accounts => {
           from: owner
         })
 
-        await poolsInstance.addPool(poolId, destination, 
+        await poolsInstance.addPool(destination, 
           contributionStartUtc, contributionEndUtc, amountLimit, 
           prizeCalculatorInstance.address,
           {
@@ -148,7 +148,7 @@ contract('Product', accounts => {
     })
 
     describe('#tokens payouts', async function () {
-      var poolId = web3.fromAscii('18fda5cf3a7a4999e3400f4940126432');
+      var poolId = getHex(1)
       var contributionStartUtc = new Date().getTime() / 1000 - 2;
       var contributionEndUtc = contributionStartUtc + 1000000
       var amountLimit = web3.toWei(12, 'ether')
@@ -162,7 +162,7 @@ contract('Product', accounts => {
           from: owner
         })
 
-        await poolsInstance.addPool(poolId, destination, 
+        await poolsInstance.addPool(destination, 
           contributionStartUtc, contributionEndUtc, amountLimit, 
           prizeCalculatorInstance.address,
           {
@@ -172,38 +172,46 @@ contract('Product', accounts => {
   
       it('happy receiveApproval flow', async function () {
         const amount = web3.toWei(2, 'ether');
-        var contributionId = web3.fromAscii('0a883323f9d84b449c911ac5486ed515');
+        var contributionId = "1";
         
         await testTokenInstance.transfer(c1, amount); // give tokens to 1 contributor
         
-        await testTokenInstance.approveAndCall(poolsInstance.address, amount, poolId + contributionId.replace("0x", ""), {
+        await testTokenInstance.approveAndCall(poolsInstance.address, amount, poolId, {
           from: c1
         });
 
-        const contribution = await poolsInstance.getContribution(poolId, contributionId);
-        const walletPools = await poolsInstance.walletPools.call(c1,0,{
+        const contribution = await poolsInstance.getContribution(contributionId);
+        const myContributions = await poolsInstance.myContributions.call(c1, 0, {
           from: owner
         })
+
+        var poolContributionsLength = await poolsInstance.getPoolContributionsLength(poolId);
+        assert.equal(poolContributionsLength.toNumber(), 1);
+
+        var poolContributionId = await poolsInstance.getPoolContribution(poolId,0);
+        assert.equal(poolContributionId.toNumber(), contributionId);
+
       
-        assert.equal(contribution[0], c1);
-        assert.equal(contribution[1].toNumber(), amount);
-        assert.equal(contribution[2].toNumber(), 0);
+        assert.equal(contribution[0].toNumber(), contributionId);
+        assert.equal(contribution[1].toNumber(), poolId);
+        assert.equal(contribution[2].toNumber(), amount);
+        assert.equal(contribution[3].toNumber(), 0);
+        assert.equal(contribution[4], c1);
         
         assert.equal(0, await testTokenInstance.balanceOf(c1))
         assert.equal(amount, await testTokenInstance.balanceOf(poolsInstance.address))
 
-        assert.equal(walletPools[0], poolId);
-        assert.equal(walletPools[1], contributionId);
+        assert.equal(myContributions, contributionId);
       })
 
       it('happy refund flow', async function () {
         const amount = web3.toWei(2, 'ether');
      
-        var contributionId = web3.fromAscii('0a883323f9d84b449c911ac5486ed515');
+        var contributionId = 1;
     
         await testTokenInstance.transfer(c1, amount); // give tokens to 1 contributor
         
-        await testTokenInstance.approveAndCall(poolsInstance.address, amount, poolId + contributionId.replace("0x", ""), {
+        await testTokenInstance.approveAndCall(poolsInstance.address, amount, poolId, {
           from: c1
         });
         
@@ -211,15 +219,15 @@ contract('Product', accounts => {
           from: owner
         })
 
-        await poolsInstance.refund(poolId, contributionId, {
+        await poolsInstance.refund(contributionId, {
           from: c1
         })
         
-        const contribution_c1 = await poolsInstance.getContribution(poolId, contributionId);
-        
-        assert.equal(contribution_c1[0], c1);
-        assert.equal(contribution_c1[1].toNumber(), amount);
+        const contribution_c1 = await poolsInstance.getContribution(contributionId);
+      
         assert.equal(contribution_c1[2].toNumber(), amount);
+        assert.equal(contribution_c1[3].toNumber(), amount);
+        assert.equal(contribution_c1[4], c1);
         
         assert.equal(amount, await testTokenInstance.balanceOf(c1))
 
@@ -239,7 +247,7 @@ contract('Product', accounts => {
     
         await testTokenInstance.transfer(c1, amount); // give tokens to 1 contributor
         
-        await testTokenInstance.approveAndCall(poolsInstance.address, amount, poolId + contributionId.replace("0x", ""), {
+        await testTokenInstance.approveAndCall(poolsInstance.address, amount, poolId, {
           from: c1
         })
 
@@ -250,5 +258,40 @@ contract('Product', accounts => {
         assert.equal(0, await testTokenInstance.balanceOf(poolsInstance.address))
         assert.equal(amount, await testTokenInstance.balanceOf(destination))
       })
+
+
+      describe('#bytesToUint', async function () {
+        beforeEach(async function () {
+          prizeCalculatorInstance = await PrizeCalculator.new()
+          testTokenInstance = await TestToken.new()
+          poolsInstance = await Pools.new()
+        })
+    
+        it('happy addPool flow', async function () {
+          var poolId = getHex(5)
+
+          var result = await poolsInstance.bytesToUint.call(poolId);
+
+          assert.equal(result.toNumber(), 5)
+          
+          poolId = getHex(10)
+          result = await poolsInstance.bytesToUint.call(poolId);
+          assert.equal(result.toNumber(), 10)
+
+          poolId = getHex(15)
+          result = await poolsInstance.bytesToUint.call(poolId);
+          assert.equal(result.toNumber(), 15)
+        })
+      })
+
+      function getHex(x) {
+        var result = web3.toHex(x)
+
+        if(result.length % 2 == 1) {
+          // bug https://github.com/ethereum/web3.js/issues/873
+          result = result.replace("0x","0x0")
+        }
+        return result;
+      }
     })
 })
