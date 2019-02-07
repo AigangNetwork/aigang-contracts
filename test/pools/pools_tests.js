@@ -2,8 +2,8 @@ var TestToken = artifacts.require('TestToken.sol')
 var PrizeCalculator = artifacts.require('./pools/PrizeCalculator.sol')
 var Pools = artifacts.require('./pools/Pools.sol')
 
-let tryCatch = require('./exceptions.js').tryCatch
-let errTypes = require('./exceptions.js').errTypes
+let tryCatch = require('../exceptions.js').tryCatch
+let errTypes = require('../exceptions.js').errTypes
 
 contract('Pools', accounts => {
     let prizeCalculatorInstance
