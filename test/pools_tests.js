@@ -77,7 +77,7 @@ contract('Pools', accounts => {
 
         await poolsInstance.addPool(destination, 
           contributionStartUtc, contributionEndUtc, amountLimit, 
-          prizeCalculatorInstance.address,
+          prizeCalculatorInstance.address,"Title","Description",
           {
           from: owner
         })       
@@ -94,6 +94,8 @@ contract('Pools', accounts => {
         assert.equal(0, pool[6].toNumber()) // amountDistributing
         assert.equal(0, pool[7].toNumber()) // paidout
         assert.equal(prizeCalculatorInstance.address, pool[8])
+        assert.equal("Title", pool[9])
+        assert.equal("Description", pool[10])
         let totalPools = await poolsInstance.totalPools()
         assert.equal(totalPools, 1)
       })
@@ -116,7 +118,7 @@ contract('Pools', accounts => {
 
         await poolsInstance.addPool(destination, 
           contributionStartUtc, contributionEndUtc, amountLimit, 
-          prizeCalculatorInstance.address,
+          prizeCalculatorInstance.address,"","",
           {
           from: owner
         }) 
@@ -164,7 +166,7 @@ contract('Pools', accounts => {
 
         await poolsInstance.addPool(destination, 
           contributionStartUtc, contributionEndUtc, amountLimit, 
-          prizeCalculatorInstance.address,
+          prizeCalculatorInstance.address,"","",
           {
           from: owner
         })    
@@ -267,7 +269,7 @@ contract('Pools', accounts => {
           poolsInstance = await Pools.new()
         })
     
-        it('happy addPool flow', async function () {
+        it('test convertions', async function () {
           var poolId = getHex(5)
 
           var result = await poolsInstance.bytesToUint.call(poolId);

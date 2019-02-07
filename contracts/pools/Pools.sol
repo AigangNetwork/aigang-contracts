@@ -27,6 +27,8 @@ contract Pools is Owned {
         uint paidout;
         address prizeCalculator;
         uint[] contributions;
+        string title;
+        string description;
     }
 
     struct Contribution { 
@@ -63,7 +65,12 @@ contract Pools is Owned {
     }
 
     modifier senderIsToken() {
-        require(msg.sender == address(token));
+        require(msg.sender == address(token), "Sender should be Token");
+        _;
+    }
+
+    modifier poolExist(uint _poolId) {
+        require(pools[_poolId].status != PoolStatus.NotSet, "Pool should be initialized");
         _;
     }
 
@@ -80,7 +87,9 @@ contract Pools is Owned {
             uint _contributionStartUtc, 
             uint _contributionEndUtc, 
             uint _amountLimit, 
-            address _prizeCalculator) 
+            address _prizeCalculator,
+            string _title,
+            string _description) 
         external 
         onlyOwnerOrSuperOwner 
         contractNotPaused 
@@ -96,23 +105,18 @@ contract Pools is Owned {
         pools[id].amountLimit = _amountLimit;
         pools[id].prizeCalculator = _prizeCalculator;
         
+        pools[id].title = _title;
+        pools[id].description = _description;
+        
         emit PoolAdded(id);
         return id;
     }
 
-    function updateDestination(uint _id, 
-            address _destination) 
-        external 
-        onlyOwnerOrSuperOwner 
-        contractNotPaused {
-
-        pools[_id].destination = _destination;
-
-        emit PoolDestinationUpdated(_id);
-    }
-    
-    function setPoolStatus(uint _poolId, PoolStatus _status) public onlyOwnerOrSuperOwner {
-        require(pools[_poolId].status != PoolStatus.NotSet, "pool should be initialized");
+    function setPoolStatus(uint _poolId, PoolStatus _status) 
+            public 
+            onlyOwnerOrSuperOwner
+            poolExist(_poolId) {
+       
         emit PoolStatusChange(_poolId,pools[_poolId].status, _status);
         pools[_poolId].status = _status;
     }
@@ -175,8 +179,7 @@ contract Pools is Owned {
         require(con.amount > 0, "Contribution not valid");
         require(con.paidout == 0, "Contribution already paidout");
         require(con.owner != address(0), "Owner not valid"); 
-        
-        
+
         IPrizeCalculator calculator = IPrizeCalculator(pools[poolId].prizeCalculator);
     
         uint winAmount = calculator.calculatePrizeAmount(
@@ -208,6 +211,47 @@ contract Pools is Owned {
         assert(IERC20(token).transfer(con.owner, con.amount));
 
         emit Paidout(_contributionId);
+    }
+
+    //////////
+    // Updates
+    //////////
+    function updateAddresses(uint _poolId, 
+            address _destination,
+            address _prizeCalculator) 
+        external 
+        onlyOwnerOrSuperOwner 
+        contractNotPaused
+        poolExist(_poolId) {
+        
+        pools[_poolId].destination = _destination;
+        pools[_poolId].prizeCalculator = _prizeCalculator;
+
+        emit PoolDestinationUpdated(_poolId);
+    }
+
+    function updateDescriptions(uint _poolId, 
+            string _title,
+            string _description) 
+        external 
+        onlyOwnerOrSuperOwner 
+        contractNotPaused 
+        poolExist(_poolId) {
+        
+        pools[_poolId].title = _title;
+        pools[_poolId].description = _description;
+    }
+
+    function updateData(uint _poolId, 
+            uint _contributionEndUtc,
+            uint _amountLimit) 
+        external 
+        onlyOwnerOrSuperOwner 
+        contractNotPaused 
+        poolExist(_poolId) {
+
+        pools[_poolId].contributionEndUtc = _contributionEndUtc;
+        pools[_poolId].amountLimit = _amountLimit;
     }
 
     //////////
