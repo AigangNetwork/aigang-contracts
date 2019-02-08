@@ -155,7 +155,7 @@ contract Pools is Owned {
         uint contributionId = getContributionId();
         pools[poolId].contributions.push(contributionId);
 
-        contributions[contributionId] = Contribution(contributionId, poolId, _amountOfTokens, _from)
+        contributions[contributionId] = Contribution(contributionId, poolId, _amountOfTokens, 0, _from);
         myContributions[_from].push(contributionId);
 
         emit ContributionAdded(_from, poolId, contributionId);
@@ -224,7 +224,7 @@ contract Pools is Owned {
         pools[_poolId].destination = _destination;
         pools[_poolId].prizeCalculator = _prizeCalculator;
 
-        emit PoolDestinationUpdated(_poolId, _destination, _prizeCalculator);
+        emit PoolAddressesUpdated(_poolId, _destination, _prizeCalculator);
     }
 
     function updateDescriptions(uint _poolId, 

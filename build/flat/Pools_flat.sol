@@ -71,11 +71,14 @@ contract Pools is Owned {
 
     event Initialize(address _token);
     event PoolAdded(uint _id);
-    event PoolDestinationUpdated(uint _id);
     event ContributionAdded(address _from, uint _poolId, uint _contributionId);
     event PoolStatusChange(uint _poolId, PoolStatus _oldStatus, PoolStatus _newStatus);
     event Paidout(uint _contributionId);
     event Withdraw(uint _amount);
+
+    event PoolAddressesUpdated(uint _id, address _destination, address _prizeCalculator);
+    event PoolDescriptionsUpdated(uint _id, string _title, string _description);
+    event PoolDataUpdated(uint _id, uint _contributionEndUtc, uint _amountLimit);
     
     struct Pool {  
         uint contributionStartUtc;
@@ -141,8 +144,6 @@ contract Pools is Owned {
         emit Initialize(_token);
     }
 
-    
-// TODO: create update function
     function addPool(
             address _destination, 
             uint _contributionStartUtc, 
@@ -154,7 +155,7 @@ contract Pools is Owned {
         external 
         onlyOwnerOrSuperOwner 
         contractNotPaused 
-        returns (uint){
+        returns (uint) {
         
         uint id = getPoolId();
 
@@ -215,11 +216,7 @@ contract Pools is Owned {
         uint contributionId = getContributionId();
         pools[poolId].contributions.push(contributionId);
 
-        contributions[contributionId].id = contributionId;
-        contributions[contributionId].poolId = poolId;
-        contributions[contributionId].amount = _amountOfTokens;
-        contributions[contributionId].owner = _from;
-
+        contributions[contributionId] = Contribution(contributionId, poolId, _amountOfTokens, 0, _from);
         myContributions[_from].push(contributionId);
 
         emit ContributionAdded(_from, poolId, contributionId);
@@ -288,7 +285,7 @@ contract Pools is Owned {
         pools[_poolId].destination = _destination;
         pools[_poolId].prizeCalculator = _prizeCalculator;
 
-        emit PoolDestinationUpdated(_poolId);
+        emit PoolAddressesUpdated(_poolId, _destination, _prizeCalculator);
     }
 
     function updateDescriptions(uint _poolId, 
@@ -301,6 +298,8 @@ contract Pools is Owned {
         
         pools[_poolId].title = _title;
         pools[_poolId].description = _description;
+
+        emit PoolDescriptionsUpdated(_poolId, _title, _description);
     }
 
     function updateData(uint _poolId, 
@@ -313,6 +312,8 @@ contract Pools is Owned {
 
         pools[_poolId].contributionEndUtc = _contributionEndUtc;
         pools[_poolId].amountLimit = _amountLimit;
+
+        emit PoolDataUpdated(_poolId, _contributionEndUtc, _amountLimit);
     }
 
     //////////
@@ -333,6 +334,27 @@ contract Pools is Owned {
 
     function getPoolContribution(uint _poolId, uint index) public view returns (uint) {
         return pools[_poolId].contributions[index];
+    }
+
+    // ////////
+    // Utils
+    // ////////
+
+    function bytesToUint(bytes b) public pure returns(uint) {
+        uint256 number;
+        for(uint i=0;i<b.length;i++){
+            number = number + uint(b[i])*(2**(8*(b.length-(i+1))));
+        }
+        
+        return number;
+    }
+
+    function getPoolId() private returns (uint) {
+        return POOL_ID = POOL_ID.add(1);
+    }
+
+     function getContributionId() private returns (uint) {
+        return CONTRIBUTION_ID = CONTRIBUTION_ID.add(1);
     }
  
 
@@ -356,23 +378,6 @@ contract Pools is Owned {
 
     function pause(bool _paused) external onlyOwnerOrSuperOwner {
         paused = _paused;
-    }
-
-    function bytesToUint(bytes b) public pure returns(uint) {
-        uint256 number;
-        for(uint i=0;i<b.length;i++){
-            number = number + uint(b[i])*(2**(8*(b.length-(i+1))));
-        }
-        
-        return number;
-    }
-
-    function getPoolId() private returns (uint) {
-        return POOL_ID = POOL_ID.add(1);
-    }
-
-     function getContributionId() private returns (uint) {
-        return CONTRIBUTION_ID = CONTRIBUTION_ID.add(1);
     }
 }
 

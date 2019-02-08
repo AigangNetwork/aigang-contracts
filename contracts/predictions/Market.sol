@@ -151,7 +151,7 @@ contract Market is Owned {
         totalFeeCollected = totalFeeCollected.add(predictions[predictionId].fee);
 
         uint forecastId = getForecastId();
-        predictions[predictionId].forecasts.push(forecastId) 
+        predictions[predictionId].forecasts.push(forecastId); 
 
         predictions[predictionId].totalTokens = predictions[predictionId].totalTokens.add(amount);
         predictions[predictionId].totalForecasts = predictions[predictionId].totalForecasts.add(1);
@@ -226,7 +226,7 @@ contract Market is Owned {
         predictions[predictionId].totalTokensPaidout = predictions[predictionId].totalTokensPaidout.add(refundAmount);        
         forecasts[_forecastId].paidOut = refundAmount;
                                                     
-        assert(IERC20(token).transfer(predictions[predictionId].forecasts[_forecastId].owner, refundAmount)); 
+        assert(IERC20(token).transfer(forecasts[_forecastId].owner, refundAmount)); 
         emit Refunded(predictionId, _forecastId);
     }
 
@@ -235,14 +235,17 @@ contract Market is Owned {
     //////////
     // Views
     //////////
-    function getForecast(uint _forecastId) public view returns(address, uint, uint8, uint) {
-        return (forecasts[_forecastId].user,
+    function getForecast(uint _forecastId) public view returns(uint, uint, address, uint, uint8, uint) {
+        return (
+            forecasts[_forecastId].id,
+            orecasts[_forecastId].predictionId,
+            forecasts[_forecastId].user,
             forecasts[_forecastId].amount,
             forecasts[_forecastId].outcomeId,
             forecasts[_forecastId].paidOut);
     }
 
-    function getOutcomeTokens(bytes32 _predictionId, uint8 _outcomeId) public view returns(uint) {
+    function getOutcomeTokens(uint _predictionId, uint8 _outcomeId) public view returns(uint) {
         return (predictions[_predictionId].outcomeTokens[_outcomeId]);
     }
 
