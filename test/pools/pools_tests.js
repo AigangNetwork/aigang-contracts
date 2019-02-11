@@ -4,6 +4,7 @@ var Pools = artifacts.require('./pools/Pools.sol')
 
 let tryCatch = require('../exceptions.js').tryCatch
 let errTypes = require('../exceptions.js').errTypes
+const Utils = require('../utils.js');
 
 contract('Pools', accounts => {
     let prizeCalculatorInstance
@@ -150,7 +151,7 @@ contract('Pools', accounts => {
     })
 
     describe('#tokens payouts', async function () {
-      var poolId = getHex(1)
+      var poolId = Utils.getHex(1)
       var contributionStartUtc = new Date().getTime() / 1000 - 2;
       var contributionEndUtc = contributionStartUtc + 1000000
       var amountLimit = web3.toWei(12, 'ether')
@@ -270,30 +271,22 @@ contract('Pools', accounts => {
         })
     
         it('test convertions', async function () {
-          var poolId = getHex(5)
+          var poolId = Utils.getHex(5)
 
           var result = await poolsInstance.bytesToUint.call(poolId);
 
           assert.equal(result.toNumber(), 5)
           
-          poolId = getHex(10)
+          poolId = Utils.getHex(10)
           result = await poolsInstance.bytesToUint.call(poolId);
           assert.equal(result.toNumber(), 10)
 
-          poolId = getHex(15)
+          poolId = Utils.getHex(15)
           result = await poolsInstance.bytesToUint.call(poolId);
           assert.equal(result.toNumber(), 15)
         })
       })
 
-      function getHex(x) {
-        var result = web3.toHex(x)
 
-        if(result.length % 2 == 1) {
-          // bug https://github.com/ethereum/web3.js/issues/873
-          result = result.replace("0x","0x0")
-        }
-        return result;
-      }
     })
 })

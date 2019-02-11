@@ -2,6 +2,7 @@ const TestToken = artifacts.require('TestToken.sol');
 const Market = artifacts.require('./predictions/Market.sol');
 const PrizeCalculator = artifacts.require('./predictions/PrizeCalculator.sol');
 const ResultStorage = artifacts.require('./predictions/ResultStorage.sol');
+const Utils = require('../utils.js');
 
 const BigNumber = web3.BigNumber;
 contract('Market', accounts => {
@@ -22,7 +23,7 @@ contract('Market', accounts => {
 
       await marketInstance.initialize(testTokenInstance.address);
 
-      id = web3.toAscii('18fda5cf3a7a4bc999e3400f49401266');
+      id = 1;
       const endTime = Date.now() + 60;
       const startTime = new Date().getTime() / 1000 - 2;
       const feeInWeis = web3.toWei(12, 'ether');
@@ -30,7 +31,6 @@ contract('Market', accounts => {
       const totalTokens = 1000;
 
       await marketInstance.addPrediction(
-        id,
         endTime,
         startTime,
         feeInWeis,
@@ -46,6 +46,30 @@ contract('Market', accounts => {
       const predictionStatus = prediction[3].toNumber();
 
       assert.equal(1, predictionStatus);
+
+      // Details
+      let title = "Test Title"
+      let description = "TEST Description"
+      await marketInstance.updateDescriptions(id,title,description);
+
+      let details = await marketInstance.getDetails(id);
+
+      assert.equal(title, details[0]);
+      assert.equal(description, details[1]);
+      
+      // Outcomes
+      title = "Outcome Title"
+      let value = ">1"
+      await marketInstance.updateOutcome(id,1,title,value);
+      await marketInstance.updateOutcome(id,2,title + "2",value+"2");
+
+      let outcome1 = await marketInstance.getOutcome(id,1);
+      assert.equal(1, outcome1[0].toNumber());
+      assert.equal(title, outcome1[1]);
+      assert.equal(value, outcome1[2]);
+
+      let outcome2 = await marketInstance.getOutcome(id,2);
+      assert.equal(2, outcome2[0].toNumber());
     });
 
     it('change prediction status', async () => {
@@ -67,7 +91,7 @@ contract('Market', accounts => {
     });
 
     it('resolve prediction', async () => {
-      const id = 1342;
+      const id = 1;
       const endTime = new Date().getTime() / 1000 - 1000;
       const startTime = Date.now() - 1;
       const feeInWeis = web3.toWei(12, 'ether');
@@ -75,7 +99,6 @@ contract('Market', accounts => {
       const totalTokens = 1000;
 
       await marketInstance.addPrediction(
-        id,
         endTime,
         startTime,
         feeInWeis,
@@ -97,7 +120,7 @@ contract('Market', accounts => {
 
     it('payout prediction', async () => {
       // Creating prediction
-      const id = web3.fromAscii('18fda5cf3a7a4999e3400f4940126432'); // result is hex 
+      const id = Utils.getHex(2); 
       const endTime = new Date().getTime() / 1000 + 2;
       const startTime = new Date().getTime() / 1000 - 2;
       const feeInWeis = web3.toWei(12, 'ether');
@@ -105,7 +128,6 @@ contract('Market', accounts => {
       const totalTokens = web3.toWei(0, 'ether');
 
       await marketInstance.addPrediction(
-        id,
         endTime,
         startTime,
         feeInWeis,
@@ -119,29 +141,29 @@ contract('Market', accounts => {
       const firstAmount = web3.toWei(112, 'ether');
       const firstOutcomeId = 1;
 
-      var firstOutcomeIdHex = firstOutcomeId.toString(16);
-      if (firstOutcomeIdHex.length === 1) {
-        firstOutcomeIdHex = "0" + firstOutcomeIdHex;
-      }
+      // var firstOutcomeIdHex = firstOutcomeId.toString(16);
+      // if (firstOutcomeIdHex.length === 1) {
+      //   firstOutcomeIdHex = "0" + firstOutcomeIdHex;
+      // }
 
       const secondAmount = web3.toWei(62, 'ether');
       const secondOutcomeId = 2;
 
-      var secondOutcomeIdHex = secondOutcomeId.toString(16);
-      if (secondOutcomeIdHex.length === 1) {
-        secondOutcomeIdHex = "0" + secondOutcomeIdHex;
-      }
+      // var secondOutcomeIdHex = secondOutcomeId.toString(16);
+      // if (secondOutcomeIdHex.length === 1) {
+      //   secondOutcomeIdHex = "0" + secondOutcomeIdHex;
+      // }
 
-      const firstIdHex = web3.fromAscii('0a883323f9d84b449c911ac5486ed515');
-      const secondIdHex = web3.fromAscii('0a883323f9d84b449c911ac5486ed516');
+      const firstIdHex = Utils.getHex(1);
+      const secondIdHex = Utils.getHex(2);
 
       await testTokenInstance.transfer(marketInstance.address, totalTokens);
       await testTokenInstance.transfer(accounts[1], firstAmount);
 
-      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, id + firstIdHex.replace("0x", "") + firstOutcomeIdHex, {
+      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, firstIdHex + id.replace("0x",""), {
         from: accounts[1]
       });
-      await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, id + secondIdHex.replace("0x", "") + secondOutcomeIdHex);
+      await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, secondIdHex + id.replace("0x",""));
 
 
       // Sleep to make prediction endTime < now
@@ -154,9 +176,9 @@ contract('Market', accounts => {
       // Paying out
       await marketInstance.payout(id, firstIdHex);
 
-      const forecast = await marketInstance.getForecast(id, firstIdHex);
+      const forecast = await marketInstance.getForecast(firstIdHex);
       //console.log(`forecast: ${forecast}`)
-      assert(forecast[3].toNumber() != 0, 'Paid sum is 0');
+      assert(forecast[5].toNumber() != 0, 'Paid sum is 0');
     });
   });
 
@@ -171,7 +193,7 @@ contract('Market', accounts => {
       testTokenInstance = await TestToken.new();
 
       await marketInstance.initialize(testTokenInstance.address);
-      predictionId = web3.fromAscii('18fda5cf3a7a4999e3400f4940126432'); // result is hex 
+      predictionId = Utils.getHex(1);
       const endTime = Date.now() + 60;
       const startTime = new Date().getTime() / 1000 - 2;
       feeInWeis = web3.toWei(12, 'ether');
@@ -179,7 +201,6 @@ contract('Market', accounts => {
       const totalTokens = web3.toWei(1000, 'ether');
 
       await marketInstance.addPrediction(
-        predictionId,
         endTime,
         startTime,
         feeInWeis,
@@ -195,81 +216,63 @@ contract('Market', accounts => {
     it('create forecast', async () => {
       const firstAmount = web3.toWei(100, 'ether');
       const firstOutcomeId = 1;
-      var firstOutcomeIdHex = firstOutcomeId.toString(16);
-      if (firstOutcomeIdHex.length === 1) {
-        firstOutcomeIdHex = "0" + firstOutcomeIdHex;
-      }
+      var firstOutcomeIdHex = Utils.getHex(firstOutcomeId);
 
       const secondAmount = web3.toWei(75, 'ether');
       const secondOutcomeId = 2;
-      var secondOutcomeIdHex = secondOutcomeId.toString(16);
-      if (secondOutcomeIdHex.length === 1) {
-        secondOutcomeIdHex = "0" + secondOutcomeIdHex;
-      }
-
-      const firstIdHex = web3.fromAscii('0a883323f9d84b449c911ac5486ed515');
-      const secondIdHex = web3.fromAscii('0a883323f9d84b449c911ac5486ed516');
+      var secondOutcomeIdHex = Utils.getHex(secondOutcomeId);
 
       await testTokenInstance.transfer(accounts[3], web3.toWei(75, 'ether')); // give tokens to account 3
 
-      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, predictionId + firstIdHex.replace("0x", "") + firstOutcomeIdHex);
-      await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, predictionId + secondIdHex.replace("0x", "") + secondOutcomeIdHex, {
+      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, firstOutcomeIdHex + predictionId.replace("0x", "")  );
+      await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, secondOutcomeIdHex + predictionId.replace("0x", ""), {
         from: accounts[3]
       });
 
-      const firstForecast = await marketInstance.getForecast(predictionId, firstIdHex);
-      const secondForecast = await marketInstance.getForecast(predictionId, secondIdHex);
+      const firstForecast = await marketInstance.getForecast(1);
+      const secondForecast = await marketInstance.getForecast(2);
 
-      assert.equal(firstForecast[0], owner);
-      assert.equal(firstForecast[1].toNumber(), firstAmount - feeInWeis);
-      assert.equal(secondForecast[1].toNumber(), secondAmount - feeInWeis);
+      assert.equal(firstForecast[2], owner);
+      assert.equal(firstForecast[3].toNumber(), firstAmount - feeInWeis);
+      assert.equal(secondForecast[3].toNumber(), secondAmount - feeInWeis);
     });
 
     it('refund forecast', async () => {
       // Adding two forecast
       const firstAmount = web3.toWei(112, 'ether');
       const firstOutcomeId = 1;
-
-      var firstOutcomeIdHex = firstOutcomeId.toString(16);
-      if (firstOutcomeIdHex.length === 1) {
-        firstOutcomeIdHex = "0" + firstOutcomeIdHex;
-      }
+      var firstOutcomeIdHex = Utils.getHex(firstOutcomeId);
 
       const secondAmount = web3.toWei(62, 'ether');
       const secondOutcomeId = 2;
-
-      var secondOutcomeIdHex = secondOutcomeId.toString(16);
-      if (secondOutcomeIdHex.length === 1) {
-        secondOutcomeIdHex = "0" + secondOutcomeIdHex;
-      }
-
-      const firstIdHex = web3.fromAscii('0a883323f9d84b449c911ac5486ed515');
-      const secondIdHex = web3.fromAscii('0a883323f9d84b449c911ac5486ed516');
+      var secondOutcomeIdHex = Utils.getHex(secondOutcomeId);
 
       await testTokenInstance.transfer(accounts[3], web3.toWei(113, 'ether'));
 
-      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, predictionId + firstIdHex.replace("0x", "") + firstOutcomeIdHex, {
+      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, firstOutcomeIdHex + predictionId.replace("0x", ""), {
         from: accounts[3]
       });
 
-      await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, predictionId + secondIdHex.replace("0x", "") + secondOutcomeIdHex);
+      await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, secondOutcomeIdHex + predictionId.replace("0x", ""));
 
       await marketInstance.changePredictionStatus(predictionId,4); 
-      await marketInstance.refund(predictionId, firstIdHex);
+      await marketInstance.refund(firstOutcomeIdHex, predictionId);
 
-      const forecast = await marketInstance.getForecast(predictionId, firstIdHex);
+      const forecast = await marketInstance.getForecast(firstOutcomeIdHex);
 
-      assert.equal(forecast[3].toNumber(), firstAmount - feeInWeis);
-    });
-  });
+      assert.equal(forecast[5].toNumber(), firstAmount - feeInWeis);
+    })
+  })
+
+  
 
   // TODO: Unit test withdraw ETH and WithdrawTokens
-});
+})
 
 const sleep = milliseconds => {
   return new Promise(resolve => {
     setTimeout(() => {
       resolve();
     }, milliseconds);
-  });
-};
+  })
+}

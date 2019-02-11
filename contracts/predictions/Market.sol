@@ -17,6 +17,9 @@ contract Market is Owned {
     event PredictionResolved(uint predictionId, uint8 winningOutcomeId);
     event PaidOut(uint _predictionId, uint _forecastId);
     event Withdraw(uint _amount);
+    event PredictionDescriptionsUpdated(uint _predictionId, string _title, string _description);
+    event PredictionOutcomeAdded(uint _predictionId,uint8 _outcomeIndex);
+    event PredictionOutcomeUpdated(uint _predictionId,uint8 _outcomeIndex);
 
     enum PredictionStatus {
         NotSet,    // 0
@@ -34,13 +37,26 @@ contract Market is Owned {
         uint8 outcomesCount;
         uint8 resultOutcome;
         uint[] forecasts;
-        mapping(uint8 => uint) outcomeTokens;
+        //mapping(uint8 => uint) outcomeTokens;
         uint initialTokens;  
         uint totalTokens;          
         uint totalForecasts;   
         uint totalTokensPaidout;     
         address resultStorage;   
         address prizeCalculator;
+        mapping(uint8 => Outcome) outcomes;
+    }
+
+    struct Details {  
+        string title;
+        string description;
+    }
+
+    struct Outcome {  
+        uint8 id;
+        string title;  
+        string value;
+        uint totalTokens;
     }
 
     struct Forecast {  
@@ -59,6 +75,7 @@ contract Market is Owned {
     uint public PREDICTION_ID;
     uint public FORECAST_ID;
 
+    mapping(uint => Details) public predictionDetails;
     mapping(uint => Prediction) public predictions;
     mapping(uint => Forecast) public forecasts;
     mapping(address => uint[]) public myForecasts;
@@ -79,6 +96,11 @@ contract Market is Owned {
         require(msg.sender == address(token), "Sender is not token");
         _;
     }
+
+    modifier predictionExist(uint _predictionId) {
+        require(predictions[_predictionId].status != PredictionStatus.NotSet, "Entity should be initialized");
+        _;
+    }
     
     function initialize(address _token) external onlyOwnerOrSuperOwner {
         token = _token;
@@ -89,8 +111,8 @@ contract Market is Owned {
     function addPrediction(
             uint _forecastEndUtc,
             uint _forecastStartUtc,
-            uint _fee,
-            uint8 _outcomesCount,  
+            uint _fee, 
+            uint8 _outcomeCount,
             uint _initialTokens,   
             address _resultStorage, 
             address _prizeCalculator) 
@@ -105,7 +127,7 @@ contract Market is Owned {
         predictions[id].forecastStartUtc = _forecastStartUtc;
         predictions[id].fee = _fee;
         predictions[id].status = PredictionStatus.Published;  
-        predictions[id].outcomesCount = _outcomesCount;
+        predictions[id].outcomesCount = _outcomeCount;
         predictions[id].initialTokens = _initialTokens;
         predictions[id].totalTokens = _initialTokens;
         predictions[id].resultStorage = _resultStorage;
@@ -113,6 +135,30 @@ contract Market is Owned {
 
         emit PredictionAdded(id);
         return id;
+    }
+
+    function updateOutcome(uint _predictionId, 
+            uint8 _outcomeIndex,
+            string _title,
+            string _value) 
+        external 
+        onlyOwnerOrSuperOwner 
+        marketNotPaused 
+        predictionExist(_predictionId) {
+        
+        require(_outcomeIndex > 0, "index starts from 1");
+
+        predictions[_predictionId].outcomes[_outcomeIndex].title = _title;
+        predictions[_predictionId].outcomes[_outcomeIndex].value = _value;
+        
+        if(predictions[_predictionId].outcomes[_outcomeIndex].id == 0) {
+            // add
+            predictions[_predictionId].outcomes[_outcomeIndex].id = _outcomeIndex;
+            emit PredictionOutcomeAdded(_predictionId, _outcomeIndex);
+        } else {
+            // update
+            emit PredictionOutcomeUpdated(_predictionId, _outcomeIndex);
+        }
     }
 
     function changePredictionStatus(uint _predictionId, PredictionStatus _status) 
@@ -134,7 +180,7 @@ contract Market is Owned {
         require(_from != address(0), "not valid from");
         
         uint8 outcomeId = uint8(_data[0]);
-        bytes32 predictionId = bytesToUint(_data,1);
+        uint predictionId = bytesToUint(_data,1);
 
         // Validate prediction and forecast
         require(predictions[predictionId].status == PredictionStatus.Published, "Prediction is not published");
@@ -155,7 +201,8 @@ contract Market is Owned {
 
         predictions[predictionId].totalTokens = predictions[predictionId].totalTokens.add(amount);
         predictions[predictionId].totalForecasts = predictions[predictionId].totalForecasts.add(1);
-        predictions[predictionId].outcomeTokens[outcomeId] = predictions[predictionId].outcomeTokens[outcomeId].add(amount);
+
+        predictions[predictionId].outcomes[outcomeId].totalTokens = predictions[predictionId].outcomes[outcomeId].totalTokens.add(amount);
     
         forecasts[forecastId] = Forecast(forecastId, predictionId, _from, amount, outcomeId, 0);
         myForecasts[_from].push(forecastId);
@@ -192,7 +239,7 @@ contract Market is Owned {
     
         uint winAmount = calculator.calculatePrizeAmount(
             predictions[_predictionId].totalTokens,
-            predictions[_predictionId].outcomeTokens[predictions[_predictionId].resultOutcome],
+            predictions[_predictionId].outcomes[predictions[_predictionId].resultOutcome].totalTokens,
             forecast.amount
         );
 
@@ -200,7 +247,7 @@ contract Market is Owned {
         forecast.paidOut = winAmount;
         predictions[_predictionId].totalTokensPaidout = predictions[_predictionId].totalTokensPaidout.add(winAmount);
         
-        assert(IERC20(token).transfer(forecast.user, winAmount));
+        assert(IERC20(token).transfer(forecast.owner, winAmount));
         emit PaidOut(_predictionId, _forecastId);
     }
 
@@ -213,7 +260,7 @@ contract Market is Owned {
     }
    
     // User can refund when status is CANCELED
-    function refund(uint _forecastId) external marketNotPaused statusIsCanceled(_predictionId) {
+    function refund(uint _forecastId, uint _predictionId) external marketNotPaused statusIsCanceled(_predictionId) {
         performRefund(_forecastId);
     }
 
@@ -230,7 +277,24 @@ contract Market is Owned {
         emit Refunded(predictionId, _forecastId);
     }
 
-    
+     //////////
+    // Updates
+    //////////
+    function updateDescriptions(uint _predictionId, 
+            string _title,
+            string _description) 
+        external 
+        onlyOwnerOrSuperOwner 
+        marketNotPaused
+        predictionExist(_predictionId) {
+        
+        predictionDetails[_predictionId].title = _title;
+        predictionDetails[_predictionId].description = _description;
+
+        emit PredictionDescriptionsUpdated(_predictionId, _title, _description);
+    }
+
+    // TODO: add updates
 
     //////////
     // Views
@@ -238,16 +302,31 @@ contract Market is Owned {
     function getForecast(uint _forecastId) public view returns(uint, uint, address, uint, uint8, uint) {
         return (
             forecasts[_forecastId].id,
-            orecasts[_forecastId].predictionId,
-            forecasts[_forecastId].user,
+            forecasts[_forecastId].predictionId,
+            forecasts[_forecastId].owner,
             forecasts[_forecastId].amount,
             forecasts[_forecastId].outcomeId,
             forecasts[_forecastId].paidOut);
     }
 
-    function getOutcomeTokens(uint _predictionId, uint8 _outcomeId) public view returns(uint) {
-        return (predictions[_predictionId].outcomeTokens[_outcomeId]);
+    function getOutcome(uint _predictionId, uint8 _outcomeIndex) public view returns(uint, string, string, uint) {
+        return (
+            predictions[_predictionId].outcomes[_outcomeIndex].id,
+            predictions[_predictionId].outcomes[_outcomeIndex].title,
+            predictions[_predictionId].outcomes[_outcomeIndex].value,
+            predictions[_predictionId].outcomes[_outcomeIndex].totalTokens
+           );
     }
+
+    function getDetails(uint _predictionId) public view returns(string, string) {
+        return (
+            predictionDetails[_predictionId].title,
+            predictionDetails[_predictionId].description
+           );
+    }
+
+    // TODO: add views
+    // tODO: add totals
 
 
     // ////////

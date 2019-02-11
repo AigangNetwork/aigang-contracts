@@ -73,7 +73,7 @@ contract Pools is Owned {
     }
 
     modifier poolExist(uint _poolId) {
-        require(pools[_poolId].status != PoolStatus.NotSet, "Pool should be initialized");
+        require(pools[_poolId].status != PoolStatus.NotSet, "Entity should be initialized");
         _;
     }
 

@@ -6,7 +6,7 @@ import "./../interfaces/IResultStorage.sol";
 
 contract ResultStorage is Owned, IResultStorage {
 
-    event ResultAssigned(bytes32 indexed _predictionId, uint8 _outcomeId);
+    event ResultAssigned(uint indexed _predictionId, uint8 _outcomeId);
     event Withdraw(uint _amount);
 
     struct Result {     
@@ -16,19 +16,19 @@ contract ResultStorage is Owned, IResultStorage {
 
     uint8 public constant version = 1;
     bool public paused;
-    mapping(bytes32 => Result) public results;  
+    mapping(uint => Result) public results;  
 
     modifier notPaused() {
         require(paused == false, "Contract is paused");
         _;
     }
 
-    modifier resolved(bytes32 _predictionId) {
+    modifier resolved(uint _predictionId) {
         require(results[_predictionId].resolved == true, "Prediction is not resolved");
         _;
     }
  
-    function setOutcome (bytes32 _predictionId, uint8 _outcomeId)
+    function setOutcome (uint _predictionId, uint8 _outcomeId)
             public 
             onlyAllowed
             notPaused {        
@@ -39,7 +39,7 @@ contract ResultStorage is Owned, IResultStorage {
         emit ResultAssigned(_predictionId, _outcomeId);
     }
 
-    function getResult(bytes32 _predictionId) 
+    function getResult(uint _predictionId) 
             public 
             view 
             resolved(_predictionId)
