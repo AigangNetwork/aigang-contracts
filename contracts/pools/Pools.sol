@@ -97,6 +97,7 @@ contract Pools is Owned {
         returns (uint) {
         
         uint id = getPoolId();
+        require(pools[id].status == PoolStatus.NotSet, "Entity already initialized");
 
         totalPools++;
         pools[id].contributionStartUtc = _contributionStartUtc;
@@ -130,7 +131,6 @@ contract Pools is Owned {
 
     /// Called by token contract after Approval: this.TokenInstance.methods.approveAndCall()
     // _data = poolId
-    // TODO Data only poolId as UINT
     function receiveApproval(address _from, uint _amountOfTokens, address _token, bytes _data) 
             external 
             senderIsToken
@@ -166,7 +166,6 @@ contract Pools is Owned {
         setPoolStatus(_poolId,PoolStatus.Funding);
     }
     
-    // TODO: removed PoolId from input 
     function payout(uint _contributionId) public contractNotPaused {
         Contribution storage con = contributions[_contributionId];
         uint poolId = con.poolId;
@@ -192,7 +191,6 @@ contract Pools is Owned {
         emit Paidout(_contributionId);
     }
 
-    // TODO: removed PoolId from input 
     function refund(uint _contributionId) public contractNotPaused {
         Contribution storage con = contributions[_contributionId];
         uint poolId = con.poolId;
@@ -258,7 +256,6 @@ contract Pools is Owned {
     //////////
     // Views
     //////////
-    // TODO: removed PoolId from input 
     function getContribution(uint _contributionId) public view returns(uint, uint, uint, uint, address) {
         return (contributions[_contributionId].id,
             contributions[_contributionId].poolId,
@@ -273,6 +270,10 @@ contract Pools is Owned {
 
     function getPoolContribution(uint _poolId, uint index) public view returns (uint) {
         return pools[_poolId].contributions[index];
+    }
+
+    function getMyContributionsLength() public view returns(uint) {
+        return myContributions[msg.sender].length;
     }
 
     // ////////

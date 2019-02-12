@@ -183,10 +183,15 @@ contract('Pools', accounts => {
           from: c1
         });
 
-        const contribution = await poolsInstance.getContribution(contributionId);
         const myContributions = await poolsInstance.myContributions.call(c1, 0, {
           from: owner
         })
+        assert.equal(myContributions.toNumber(), 1);
+
+        var myContributionsLength = await poolsInstance.getMyContributionsLength({
+          from: c1
+        });
+        assert.equal(myContributionsLength.toNumber(), 1);
 
         var poolContributionsLength = await poolsInstance.getPoolContributionsLength(poolId);
         assert.equal(poolContributionsLength.toNumber(), 1);
@@ -194,6 +199,8 @@ contract('Pools', accounts => {
         var poolContributionId = await poolsInstance.getPoolContribution(poolId,0);
         assert.equal(poolContributionId.toNumber(), contributionId);
 
+
+        const contribution = await poolsInstance.getContribution(contributionId);
       
         assert.equal(contribution[0].toNumber(), contributionId);
         assert.equal(contribution[1].toNumber(), poolId);

@@ -20,6 +20,8 @@ contract Market is Owned {
     event PredictionDescriptionsUpdated(uint _predictionId, string _title, string _description);
     event PredictionOutcomeAdded(uint _predictionId,uint8 _outcomeIndex);
     event PredictionOutcomeUpdated(uint _predictionId,uint8 _outcomeIndex);
+    event PredictionAddressesUpdated(uint _predictionId, address _resultStorage, address _prizeCalculator);
+    event PredictionDataUpdated(uint _predictionId,uint _forecastEndUtc,uint _forecastStartUtc,uint _fee,uint8 _outcomeCount,uint _initialTokens,uint _totalTokens);
 
     enum PredictionStatus {
         NotSet,    // 0
@@ -82,7 +84,7 @@ contract Market is Owned {
 
     uint public totalFeeCollected;
 
-    modifier marketNotPaused() {
+    modifier contractNotPaused() {
         require(paused == false, "Contract is paused");
         _;
     }
@@ -112,22 +114,24 @@ contract Market is Owned {
             uint _forecastEndUtc,
             uint _forecastStartUtc,
             uint _fee, 
-            uint8 _outcomeCount,
+            uint8 _outcomesCount,
             uint _initialTokens,   
             address _resultStorage, 
             address _prizeCalculator) 
         external 
         onlyOwnerOrSuperOwner 
-        marketNotPaused 
+        contractNotPaused 
         returns (uint) {
         
         uint id = getPredictionId();
-
+        require(predictions[id].status == PredictionStatus.NotSet, "Entity already initialized");
+        
+        totalPredictions++;
         predictions[id].forecastEndUtc = _forecastEndUtc;
         predictions[id].forecastStartUtc = _forecastStartUtc;
         predictions[id].fee = _fee;
-        predictions[id].status = PredictionStatus.Published;  
-        predictions[id].outcomesCount = _outcomeCount;
+        predictions[id].status = PredictionStatus.Paused;  
+        predictions[id].outcomesCount = _outcomesCount;
         predictions[id].initialTokens = _initialTokens;
         predictions[id].totalTokens = _initialTokens;
         predictions[id].resultStorage = _resultStorage;
@@ -143,7 +147,7 @@ contract Market is Owned {
             string _value) 
         external 
         onlyOwnerOrSuperOwner 
-        marketNotPaused 
+        contractNotPaused 
         predictionExist(_predictionId) {
         
         require(_outcomeIndex > 0, "index starts from 1");
@@ -174,7 +178,7 @@ contract Market is Owned {
     function receiveApproval(address _from, uint _amountOfTokens, address _token, bytes _data) 
             external 
             senderIsToken
-            marketNotPaused {    
+            contractNotPaused {    
 
         require(_amountOfTokens > 0, "amount should be > 0");
         require(_from != address(0), "not valid from");
@@ -227,7 +231,7 @@ contract Market is Owned {
         emit PredictionResolved(_predictionId, winningOutcomeId);
     }
 
-    function payout(uint _predictionId, uint _forecastId) public marketNotPaused {
+    function payout(uint _predictionId, uint _forecastId) public contractNotPaused {
         require(predictions[_predictionId].status == PredictionStatus.Resolved, "Prediction should be resolved");
         require(predictions[_predictionId].resultOutcome != 0, "Outcome should be set");
 
@@ -260,7 +264,7 @@ contract Market is Owned {
     }
    
     // User can refund when status is CANCELED
-    function refund(uint _forecastId, uint _predictionId) external marketNotPaused statusIsCanceled(_predictionId) {
+    function refund(uint _forecastId, uint _predictionId) external contractNotPaused statusIsCanceled(_predictionId) {
         performRefund(_forecastId);
     }
 
@@ -280,12 +284,26 @@ contract Market is Owned {
      //////////
     // Updates
     //////////
+    function updateAddresses(uint _predictionId, 
+            address _resultStorage,
+            address _prizeCalculator) 
+        external 
+        onlyOwnerOrSuperOwner 
+        contractNotPaused
+        predictionExist(_predictionId) {
+        
+        predictions[_predictionId].resultStorage = _resultStorage;
+        predictions[_predictionId].prizeCalculator = _prizeCalculator;
+
+        emit PredictionAddressesUpdated(_predictionId, _resultStorage, _prizeCalculator);
+    }
+
     function updateDescriptions(uint _predictionId, 
             string _title,
             string _description) 
         external 
         onlyOwnerOrSuperOwner 
-        marketNotPaused
+        contractNotPaused
         predictionExist(_predictionId) {
         
         predictionDetails[_predictionId].title = _title;
@@ -294,7 +312,28 @@ contract Market is Owned {
         emit PredictionDescriptionsUpdated(_predictionId, _title, _description);
     }
 
-    // TODO: add updates
+    function updateData(uint _predictionId, 
+            uint _forecastEndUtc,
+            uint _forecastStartUtc,
+            uint _fee, 
+            uint8 _outcomesCount,
+            uint _initialTokens,
+            uint _totalTokens) 
+        external 
+        onlyOwnerOrSuperOwner 
+        contractNotPaused 
+        predictionExist(_predictionId) {
+
+        predictions[_predictionId].forecastEndUtc = _forecastEndUtc;
+        predictions[_predictionId].forecastStartUtc = _forecastStartUtc;
+        predictions[_predictionId].fee = _fee;
+        predictions[_predictionId].outcomesCount = _outcomesCount;
+        predictions[_predictionId].initialTokens = _initialTokens;
+        predictions[_predictionId].totalTokens = _totalTokens;
+
+        emit PredictionDataUpdated(_predictionId, _forecastEndUtc, _forecastStartUtc, _fee, _outcomesCount, _initialTokens, _totalTokens);
+    }
+   
 
     //////////
     // Views
@@ -325,9 +364,17 @@ contract Market is Owned {
            );
     }
 
-    // TODO: add views
-    // tODO: add totals
+    function getPredictionForecastsLength(uint _predictionId) public view returns(uint) {
+        return predictions[_predictionId].forecasts.length;
+    }
 
+    function getPredictionForecast(uint _predictionId, uint index) public view returns (uint) {
+        return predictions[_predictionId].forecasts[index];
+    }
+
+    function getMyForecastsLength() public view returns(uint) {
+        return myForecasts[msg.sender].length;
+    }
 
     // ////////
     // Utils

@@ -39,6 +39,8 @@ contract('Market', accounts => {
         resultStorageInstance.address,
         prizeCalculatorInstance.address
       );
+
+      await marketInstance.changePredictionStatus(1,1)
     });
 
     it('add prediction', async () => {
@@ -79,6 +81,50 @@ contract('Market', accounts => {
       const predictionStatus = prediction[3].toNumber();
 
       assert.equal(3, predictionStatus);
+    });
+
+    it('update addresses', async () => {
+      let address = '0x49904b161ac375d8709cadd9595666ea0f4c1169'
+      await marketInstance.updateAddresses(id, address,address);
+
+      const prediction = await marketInstance.predictions.call(id);
+      const resultStorage = prediction[10];
+      const prizeCalculator = prediction[11];
+
+      assert.equal(address, resultStorage);
+      assert.equal(address, prizeCalculator);
+    });
+
+    it('update Descriptions', async () => {
+      let testTitle = 'Test Title'
+      let testDescription = 'Test Description'
+      await marketInstance.updateDescriptions(id, testTitle, testDescription);
+
+      const prediction = await marketInstance.getDetails(id);
+      const title = prediction[0];
+      const description = prediction[1];
+
+      assert.equal(testTitle, title);
+      assert.equal(testDescription, description);
+    });
+
+    it('update Data', async () => {
+      await marketInstance.updateData(id, 
+        0,
+        1,
+        2,
+        4,
+        6,
+        7);
+
+      const prediction = await marketInstance.predictions.call(id);
+
+      assert.equal(0, prediction[0].toNumber()); // _forecastEndUtc,
+      assert.equal(1, prediction[1].toNumber()); // _forecastStartUtc,
+      assert.equal(2, prediction[2].toNumber()); // _fee, 
+      assert.equal(4, prediction[4].toNumber()); // _outcomesCount,
+      assert.equal(6, prediction[6].toNumber()); // _initialTokens,
+      assert.equal(7, prediction[7].toNumber());// _totalTokens
     });
 
     it('cancel prediction', async () => {
@@ -137,22 +183,14 @@ contract('Market', accounts => {
         prizeCalculatorInstance.address
       );
 
+      await marketInstance.changePredictionStatus(2,1)
+
       // Adding two forecasts
       const firstAmount = web3.toWei(112, 'ether');
       const firstOutcomeId = 1;
 
-      // var firstOutcomeIdHex = firstOutcomeId.toString(16);
-      // if (firstOutcomeIdHex.length === 1) {
-      //   firstOutcomeIdHex = "0" + firstOutcomeIdHex;
-      // }
-
       const secondAmount = web3.toWei(62, 'ether');
       const secondOutcomeId = 2;
-
-      // var secondOutcomeIdHex = secondOutcomeId.toString(16);
-      // if (secondOutcomeIdHex.length === 1) {
-      //   secondOutcomeIdHex = "0" + secondOutcomeIdHex;
-      // }
 
       const firstIdHex = Utils.getHex(1);
       const secondIdHex = Utils.getHex(2);
@@ -210,6 +248,8 @@ contract('Market', accounts => {
         prizeCalculatorInstance.address
       );
 
+      await marketInstance.changePredictionStatus(1,1)
+
       await testTokenInstance.transfer(marketInstance.address, totalTokens);
     });
 
@@ -224,17 +264,29 @@ contract('Market', accounts => {
 
       await testTokenInstance.transfer(accounts[3], web3.toWei(75, 'ether')); // give tokens to account 3
 
-      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, firstOutcomeIdHex + predictionId.replace("0x", "")  );
+      await testTokenInstance.approveAndCall(marketInstance.address, firstAmount, firstOutcomeIdHex + predictionId.replace("0x", ""));
       await testTokenInstance.approveAndCall(marketInstance.address, secondAmount, secondOutcomeIdHex + predictionId.replace("0x", ""), {
         from: accounts[3]
       });
 
-      const firstForecast = await marketInstance.getForecast(1);
-      const secondForecast = await marketInstance.getForecast(2);
+      const firstForecast = await marketInstance.getForecast(firstOutcomeId);
+      const secondForecast = await marketInstance.getForecast(secondOutcomeId);
 
       assert.equal(firstForecast[2], owner);
       assert.equal(firstForecast[3].toNumber(), firstAmount - feeInWeis);
       assert.equal(secondForecast[3].toNumber(), secondAmount - feeInWeis);
+
+      var myForecastsLength = await marketInstance.getMyForecastsLength({
+        from: accounts[3]
+      });
+      assert.equal(myForecastsLength.toNumber(), 1);
+
+      var predictionForecastsLength = await marketInstance.getPredictionForecastsLength(predictionId);
+      assert.equal(predictionForecastsLength.toNumber(), 2);
+
+      var predictionForecasId = await marketInstance.getPredictionForecast(predictionId,1);
+      assert.equal(predictionForecasId.toNumber(), 2);
+
     });
 
     it('refund forecast', async () => {

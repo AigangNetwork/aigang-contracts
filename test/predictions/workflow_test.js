@@ -38,6 +38,8 @@ contract('Market', accounts => {
         resultStorageInstance.address,
         prizeCalculatorInstance.address
       )
+      
+      await marketInstance.changePredictionStatus(1,1)
 
       await testTokenInstance.transfer(marketInstance.address, totalTokens)
 
