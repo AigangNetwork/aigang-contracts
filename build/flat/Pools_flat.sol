@@ -11,7 +11,7 @@ interface IERC20 {
 }
 
 interface IPrizeCalculator {
-    function calculatePrizeAmount(uint _predictionTotalTokens, uint _winOutputTotalTokens, uint _forecastTokens)
+    function calculatePrizeAmount(uint _totalTokens, uint _winnersPoolTotalTokens, uint _yourTokens)
         pure
         external
         returns (uint);

@@ -1,4 +1,4 @@
-const PrizeCalculator = artifacts.require('./predictions/PrizeCalculator.sol')
+const PrizeCalculator = artifacts.require('./PrizeCalculator.sol')
 
 const BigNumber = web3.BigNumber
 contract('PrizeCalculator', accounts => {
@@ -44,6 +44,20 @@ contract('PrizeCalculator', accounts => {
       )
 
       assert.equal(result.toNumber(), web3.toWei(66.6, 'ether'))
+    })
+
+    it('calculate prize 3', async () => {
+      const distributeTotalTokens = web3.toWei(16, 'ether')
+      const collectedTotalTokens = web3.toWei(14, 'ether')
+      const contributionTokens = web3.toWei(10, 'ether')
+
+      const result = await prizeCalculatorInstance.calculatePrizeAmount(
+        distributeTotalTokens, 
+        collectedTotalTokens, 
+        contributionTokens
+      )
+
+      assert.equal(result.toNumber(), web3.toWei(11.428571428571429000, 'ether')  )
     })
   })
 })
