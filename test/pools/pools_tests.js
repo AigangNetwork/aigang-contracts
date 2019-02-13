@@ -207,6 +207,7 @@ contract('Pools', accounts => {
         assert.equal(contribution[2].toNumber(), amount);
         assert.equal(contribution[3].toNumber(), 0);
         assert.equal(contribution[4], c1);
+        assert.equal(contribution[5].toNumber()>0, true); // Created
         
         assert.equal(0, await testTokenInstance.balanceOf(c1))
         assert.equal(amount, await testTokenInstance.balanceOf(poolsInstance.address))

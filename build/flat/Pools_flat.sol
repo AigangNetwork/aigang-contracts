@@ -101,6 +101,7 @@ contract Pools is Owned {
         uint amount;
         uint paidout;
         address owner;
+        uint created;
     }
     
     enum PoolStatus {
@@ -216,7 +217,7 @@ contract Pools is Owned {
         uint contributionId = getContributionId();
         pools[poolId].contributions.push(contributionId);
 
-        contributions[contributionId] = Contribution(contributionId, poolId, _amountOfTokens, 0, _from);
+        contributions[contributionId] = Contribution(contributionId, poolId, _amountOfTokens, 0, _from, now);
         myContributions[_from].push(contributionId);
 
         emit ContributionAdded(_from, poolId, contributionId);
@@ -317,12 +318,13 @@ contract Pools is Owned {
     //////////
     // Views
     //////////
-    function getContribution(uint _contributionId) public view returns(uint, uint, uint, uint, address) {
+    function getContribution(uint _contributionId) public view returns(uint, uint, uint, uint, address, uint) {
         return (contributions[_contributionId].id,
             contributions[_contributionId].poolId,
             contributions[_contributionId].amount,
             contributions[_contributionId].paidout,
-            contributions[_contributionId].owner);
+            contributions[_contributionId].owner,
+            contributions[_contributionId].created);
     }
 
     function getPoolContributionsLength(uint _poolId) public view returns(uint) {

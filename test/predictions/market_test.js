@@ -274,6 +274,7 @@ contract('Market', accounts => {
 
       assert.equal(firstForecast[2], owner);
       assert.equal(firstForecast[3].toNumber(), firstAmount - feeInWeis);
+      assert.equal(firstForecast[6].toNumber()>0, true); // Created
       assert.equal(secondForecast[3].toNumber(), secondAmount - feeInWeis);
 
       var myForecastsLength = await marketInstance.getMyForecastsLength({

@@ -68,6 +68,7 @@ contract Market is Owned {
         uint amount;
         uint8 outcomeId;
         uint paidOut;
+        uint created;
     }
 
     uint8 public constant version = 1;
@@ -208,7 +209,7 @@ contract Market is Owned {
 
         predictions[predictionId].outcomes[outcomeId].totalTokens = predictions[predictionId].outcomes[outcomeId].totalTokens.add(amount);
     
-        forecasts[forecastId] = Forecast(forecastId, predictionId, _from, amount, outcomeId, 0);
+        forecasts[forecastId] = Forecast(forecastId, predictionId, _from, amount, outcomeId, 0, now);
         myForecasts[_from].push(forecastId);
 
         emit ForecastAdded(_from, predictionId, forecastId);
@@ -338,14 +339,15 @@ contract Market is Owned {
     //////////
     // Views
     //////////
-    function getForecast(uint _forecastId) public view returns(uint, uint, address, uint, uint8, uint) {
+    function getForecast(uint _forecastId) public view returns(uint, uint, address, uint, uint8, uint, uint) {
         return (
             forecasts[_forecastId].id,
             forecasts[_forecastId].predictionId,
             forecasts[_forecastId].owner,
             forecasts[_forecastId].amount,
             forecasts[_forecastId].outcomeId,
-            forecasts[_forecastId].paidOut);
+            forecasts[_forecastId].paidOut,
+            forecasts[_forecastId].created);
     }
 
     function getOutcome(uint _predictionId, uint8 _outcomeIndex) public view returns(uint, string, string, uint) {
