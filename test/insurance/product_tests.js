@@ -575,10 +575,10 @@ contract('Product', accounts => {
       })
     })
 
-    it('update premium calculator', async function () {
+    it('update updateAddresses', async function () {
       const newPremiumCalculator = await PremiumCalculator.new()
       
-      await productInstance.updatePremiumCalculator(newPremiumCalculator.contract.address)
+      await productInstance.updateAddresses(newPremiumCalculator.contract.address, "0x0")
 
       const premiumCalculatorAddress = await productInstance.premiumCalculator()
 
