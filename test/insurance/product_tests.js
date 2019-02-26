@@ -48,7 +48,11 @@ contract('Product', accounts => {
     })
 
     it('happy flow', async function () {
-      await productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, 0, {
+      await productInstance.initialize(testTokenInstance.address, now, endDate, 0, "Title", "Description", {
+        from: owner
+      })
+
+      await productInstance.initializePolicies(premiumCalculatorInstance.address, 100, 2000000000000000000000, 604800, {
         from: owner
       })
 
@@ -76,7 +80,7 @@ contract('Product', accounts => {
 
     it('throws than not owner', async function () {
       await tryCatch(
-        productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, 0, {
+        productInstance.initialize(testTokenInstance.address, now, endDate, 0, "Title", "Description", {
           from: nonOwner
         }),
         errTypes.revert
@@ -113,7 +117,10 @@ contract('Product', accounts => {
       await premiumCalculatorInstance.initialize(basePremium, loading, payout, {
         from: owner
       })
-      await productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, 0, {
+      await productInstance.initialize(testTokenInstance.address, now, endDate, 0, "Title", "Description",{
+        from: owner
+      })
+      await productInstance.initializePolicies(premiumCalculatorInstance.address, 100, 2000000000000000000000, 604800, {
         from: owner
       })
     })
@@ -121,8 +128,8 @@ contract('Product', accounts => {
     it('happy flow', async function () {
       let policyIdBytes = web3.fromAscii('firstID')
       //let p_owner = addresses[0]
-      let start = Date.now()
-      let end = start + 100
+      // let start = Date.now()
+      // let end = start + 100
       let calculatedPayOut = web3.toWei(1.6, 'ether')
       let properties = 'test 1'
 
@@ -133,11 +140,11 @@ contract('Product', accounts => {
         from: owner
       })
 
-      await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+      await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
         from: owner
       })
 
-      let policiesCount = await productInstance.policiesCount({
+      let policiesCount = await productInstance.policiesIdsLength({
         from: owner
       })
 
@@ -215,7 +222,7 @@ contract('Product', accounts => {
         from: owner
       })
 
-      await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+      await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
         from: owner
       })
 
@@ -237,8 +244,8 @@ contract('Product', accounts => {
     it('contract paused', async function () {
       let policyIdBytes = web3.fromAscii('firstID')
 
-      let start = Date.now()
-      let end = start + 100
+      // let start = Date.now()
+      // let end = start + 100
       let calculatedPayOut = web3.toWei(1.6, 'ether')
       let properties = 'test 1'
 
@@ -252,7 +259,7 @@ contract('Product', accounts => {
       await productInstance.pause(true)
 
       await tryCatch(
-        productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+        productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
           from: owner
         }),
         errTypes.revert
@@ -260,11 +267,11 @@ contract('Product', accounts => {
 
       await productInstance.pause(false)
       
-      await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+      await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
         from: owner
       })
 
-      let policiesCount = await productInstance.policiesCount({
+      let policiesCount = await productInstance.policiesIdsLength({
         from: owner
       })
 
@@ -274,13 +281,13 @@ contract('Product', accounts => {
     it('set unpaid policy', async function () {
       let policyIdBytes = web3.fromAscii('firstID')
 
-      let start = Date.now()
-      let end = start + 100
+      // let start = Date.now()
+      // let end = start + 100
       let calculatedPayOut = web3.toWei(1.6, 'ether')
       let properties = 'test 1'
 
       await tryCatch(
-        productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, { from: owner }), 
+        productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, { from: owner }), 
         errTypes.revert
       )
     })
@@ -309,8 +316,8 @@ contract('Product', accounts => {
       let calculatedPayOut = web3.toWei(1.6, 'ether')
       let properties = 'test 1'
 
-      let start2 = Date.now() - 10
-      let end2 = start + 10
+      // let start2 = Date.now() - 10
+      // let end2 = start + 10
       let calculatedPayOut2 = web3.toWei(1.5, 'ether')
       let isCanceled = true
       
@@ -322,19 +329,19 @@ contract('Product', accounts => {
         from: owner
       })
 
-      await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+      await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
         from: owner
       })
       
-      await productInstance.updatePolicy(policyIdBytes, owner, start2, end2, paymentValue2, calculatedPayOut2, isCanceled, {
+      await productInstance.updatePolicy(policyIdBytes, owner, start, end, paymentValue2, calculatedPayOut2, isCanceled, {
         from: owner
       })
 
       let policy = await productInstance.policies.call(policyIdBytes)
    
       assert.equal(owner, policy[0])
-      assert.equal(policy[1].toNumber(), start2)
-      assert.equal(policy[2].toNumber(), end2)
+      // assert.equal(policy[1].toNumber(), start2)
+      // assert.equal(policy[2].toNumber(), end2)
       assert.equal(policy[9], isCanceled)
       assert.equal(policy[4].toNumber(), paymentValue2)
       assert.equal(policy[5].toNumber(), calculatedPayOut2)
@@ -344,7 +351,7 @@ contract('Product', accounts => {
   it('update policy 2', async function () {
     let policyIdBytes = web3.fromAscii('firstID')
     let start = Date.now()
-    let end = start + 100
+    // let end = start + 100
     let calculatedPayOut = web3.toWei(1.6, 'ether')
     let properties = 'test 1'
 
@@ -360,7 +367,7 @@ contract('Product', accounts => {
       from: owner
     })
 
-    await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+    await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
       from: owner
     })
     
@@ -379,8 +386,8 @@ contract('Product', accounts => {
     it('happy flow', async function () {
       let policyIdBytes = web3.fromAscii('firstID')
       //let p_owner = addresses[0]
-      let start = Date.now()
-      let end = start + 100
+      // let start = Date.now()
+      // let end = start + 100
       let calculatedPayOut = web3.toWei(1.6, 'ether')
       let properties = 'test 1'
 
@@ -391,11 +398,11 @@ contract('Product', accounts => {
         from: owner
       })
 
-      await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+      await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
         from: owner
       })
 
-      let policiesCount = await productInstance.policiesCount({
+      let policiesCount = await productInstance.policiesIdsLength({
         from: owner
       })
 
@@ -405,8 +412,8 @@ contract('Product', accounts => {
     it('set same policy twice', async function () {
         let policyIdBytes = web3.fromAscii('firstID')
         //let p_owner = addresses[0]
-        let start = Date.now()
-        let end = start + 100
+        // let start = Date.now()
+        // let end = start + 100
         let calculatedPayOut = web3.toWei(1.6, 'ether')
         let properties = 'test 1'
   
@@ -417,17 +424,17 @@ contract('Product', accounts => {
           from: owner
         })
   
-        await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+        await productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, {
           from: owner
         })
 
-        await tryCatch(productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, { from: owner }), errTypes.revert)
+        await tryCatch(productInstance.addPolicy(policyIdBytes, calculatedPayOut, properties, { from: owner }), errTypes.revert)
     })
 
     it('claim same policy twice', async function () {
       let policyIdBytes = web3.fromAscii('firstID')
-      let start = Date.now()
-      let end = start + 100
+      // let start = Date.now()
+      // let end = start + 100
       let calculatedPayOut = web3.toWei(1.6, 'ether')
       let properties = 'test 1'
       const claimProperties = "TEST"
@@ -439,7 +446,7 @@ contract('Product', accounts => {
         from: owner
       })
 
-      await productInstance.addPolicy(policyIdBytes, start, end, calculatedPayOut, properties, {
+      await productInstance.addPolicy(policyIdBytes,  calculatedPayOut, properties, {
         from: owner
       })
 
@@ -460,10 +467,13 @@ contract('Product', accounts => {
       premiumCalculatorInstance = await PremiumCalculator.new()
       testTokenInstance = await TestToken.new()
       productInstance = await Product.new()
-      now = Date.now()
-      endDate = now + 6000
+      // now = Date.now()
+      // endDate = now + 6000
 
-      await productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, pool, {
+      await productInstance.initialize(testTokenInstance.address, now, endDate, pool, "Title", "Description", {
+        from: owner
+      })
+      await productInstance.initializePolicies(premiumCalculatorInstance.address, 100, 2000000000000000000000, 604800, {
         from: owner
       })
 
@@ -475,7 +485,11 @@ contract('Product', accounts => {
       const paymentValue = web3.toWei(premium.toString(), 'ether')
       let policyIdBytes = web3.fromAscii('firstID')
 
-      await productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, 0, {
+      await productInstance.initialize(testTokenInstance.address, now, endDate, 0, "Title", "Description", {
+        from: owner
+      })
+
+      await productInstance.initializePolicies(premiumCalculatorInstance.address, 100, 2000000000000000000000, 604800, {
         from: owner
       })
 
@@ -552,7 +566,11 @@ contract('Product', accounts => {
       now = Date.now()
       endDate = now + 6000
 
-      await productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, 0, {
+      await productInstance.initialize(testTokenInstance.address, now, endDate, 0, "Title", "Description", {
+        from: owner
+      })
+
+      await productInstance.initializePolicies(premiumCalculatorInstance.address, 100, 2000000000000000000000, 604800, {
         from: owner
       })
     })

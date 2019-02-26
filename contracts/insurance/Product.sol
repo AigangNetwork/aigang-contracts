@@ -6,7 +6,7 @@ import "./../utils/BytesHelper.sol";
 import "./../interfaces/IERC20.sol";
 
 interface IProduct {
-    function addPolicy(bytes32 _id, uint _utcStart, uint _utcEnd, uint _calculatedPayout, string _properties) external;
+    function addPolicy(bytes32 _id, uint _calculatedPayout, string _properties) external;
     function claim(bytes32 _policyId, string _properties) external;
 }
 
@@ -35,22 +35,33 @@ contract Product is Owned, IProduct {
         uint payout;
         string claimProperties;
         bool isCanceled;
+        uint created;
     }
     
     address public token;
     address public premiumCalculator;
-    address public pool;
+    address public investorsPool;
+
     uint public utcProductStartDate;
     uint public utcProductEndDate;
 
+    string public title;
+    string public description;
+
     bool public paused = true;
-    
-    uint public policiesCount;
+
     uint public policiesTotalCalculatedPayouts;
     uint public policiesPayoutsCount;
     uint public policiesTotalPayouts;
         
     mapping(bytes32 => Policy) public policies;
+    bytes32[] public policiesIds;
+    mapping(address => bytes32[]) public myPolicies;
+
+    uint public created;
+    uint public policiesLimit;
+    uint public productPoolLimit;
+    uint public policyTermInSeconds;
 
     modifier notPaused() {
         require(paused == false, "Contract is paused");
@@ -72,23 +83,41 @@ contract Product is Owned, IProduct {
     }
    
     function initialize(
-        address _premiumCalculator, 
         address _token, 
         uint _utcProductStartDate, 
         uint _utcProductEndDate,
-        address _pool) 
+        address _investorsPool,
+        string _title,
+        string _description) 
+            external 
+            onlyOwnerOrSuperOwner {
+
+        token = _token;
+        utcProductStartDate = _utcProductStartDate; 
+        utcProductEndDate = _utcProductEndDate;
+        investorsPool = _investorsPool;
+        title = _title;
+        description = _description;
+        created = now;
+    }
+
+    function initializePolicies(
+        address _premiumCalculator,
+        uint _policiesLimit,
+        uint _productPoolLimit,
+        uint _policyTermInSeconds) 
             external 
             onlyOwnerOrSuperOwner {
 
         premiumCalculator = _premiumCalculator;
-        token = _token;
-        utcProductStartDate = _utcProductStartDate; 
-        utcProductEndDate = _utcProductEndDate;
-        pool = _pool;
+        policiesLimit = _policiesLimit;
+        productPoolLimit = _productPoolLimit;
+        policyTermInSeconds = _policyTermInSeconds;
+
         paused = false;
     }
 
-    function addPolicy(bytes32 _id, uint _utcStart, uint _utcEnd, uint _calculatedPayout, string _properties) 
+    function addPolicy(bytes32 _id, uint _calculatedPayout, string _properties) 
             external 
             onlyAllowed 
             notPaused {
@@ -96,24 +125,28 @@ contract Product is Owned, IProduct {
         require(policies[_id].utcStart == 0, "Policy is already set");
         require(policies[_id].isCanceled == false, "Policy is already canceled");
 
-        policies[_id].utcStart = _utcStart;
-        policies[_id].utcEnd = _utcEnd;
+        policies[_id].utcStart = now;
+        policies[_id].utcEnd = now.add(policyTermInSeconds);
         policies[_id].calculatedPayout = _calculatedPayout;
         policies[_id].properties = _properties;
+        policies[_id].created = now;
 
-        policiesCount++;
         policiesTotalCalculatedPayouts = policiesTotalCalculatedPayouts.add(_calculatedPayout);
 
         emit PolicyAdd(_id);
     }
 
     /// Called by token contract after Approval: this.TokenInstance.methods.approveAndCall()
+    // TODO: check premium price ?, from_, deviceId,
     function receiveApproval(address _from, uint _amountOfTokens, address _token, bytes _data) 
             external 
             senderIsToken
             notPaused {
+                // todo validate Dates
         require(_amountOfTokens > 0, "amount should be > 0");
         require(_from != address(0), "not valid from");
+        require(policiesIds.length <= policiesLimit,"policies limit was reached");
+        require(IERC20(token).balanceOf(this) <= productPoolLimit, "contract balance reached limit");
 
         bytes32 policyId = _data.bytesToBytes32();
 
@@ -124,6 +157,9 @@ contract Product is Owned, IProduct {
    
         policies[policyId].premium = _amountOfTokens;
         policies[policyId].owner = _from;
+
+        myPolicies[_from].push(policyId);
+        policiesIds.push(policyId);
 
         emit PaymentReceived(policyId, _amountOfTokens);
     }
@@ -163,12 +199,25 @@ contract Product is Owned, IProduct {
     }      
 
     function transferToPool() public onlyOwnerOrSuperOwner {
-        require(pool != address(0), 'Pool should be set');
+        require(investorsPool != address(0), 'Pool should be set');
         uint balance = tokenBalance();
         paused = true;
-        assert(IERC20(token).transfer(pool, balance));
+        assert(IERC20(token).transfer(investorsPool, balance));
         emit WithdrawToPool(balance);
     }
+
+    //////////
+    // Views
+    //////////
+
+    function myPoliciesLength(address owner) public view returns (uint) {
+        return myPolicies[owner].length;
+    }
+
+    function policiesIdsLength() public view returns (uint) {
+        return policiesIds.length;
+    }
+
 
     //////////
     // Safety Methods

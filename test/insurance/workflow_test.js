@@ -5,7 +5,7 @@ var Product = artifacts.require('./insurance/Product.sol')
 let tryCatch = require('../exceptions.js').tryCatch
 let errTypes = require('../exceptions.js').errTypes
 
-contract('Product', accounts => {
+contract('Product Workflow', accounts => {
   let premiumCalculatorInstance
   let testTokenInstance
   let productInstance
@@ -30,7 +30,11 @@ contract('Product', accounts => {
           from: owner
         })
 
-        await productInstance.initialize(premiumCalculatorInstance.address, testTokenInstance.address, now, endDate, 0, {
+        await productInstance.initialize(testTokenInstance.address, now, endDate, 0, "Title", "Description", {
+          from: owner
+        })
+
+        await productInstance.initializePolicies(premiumCalculatorInstance.address, 100, 2000000000000000000000, 3, {
           from: owner
         })
 
@@ -80,7 +84,7 @@ contract('Product', accounts => {
         from: owner
       })
   
-      await productInstance.addPolicy(policyIdBytes1, start, end, payout, JSON.stringify(properties1), {
+      await productInstance.addPolicy(policyIdBytes1, payout, JSON.stringify(properties1), {
         from: owner
       })
       
@@ -119,7 +123,7 @@ contract('Product', accounts => {
         from: owner
       })
   
-      await productInstance.addPolicy(policyIdBytes2, start, end, payout, JSON.stringify(properties2), {
+      await productInstance.addPolicy(policyIdBytes2, payout, JSON.stringify(properties2), {
         from: owner
       })
 
@@ -157,7 +161,7 @@ contract('Product', accounts => {
         from: owner
       })
   
-      await productInstance.addPolicy(policyIdBytes3, start, end, payout, JSON.stringify(properties3), {
+      await productInstance.addPolicy(policyIdBytes3, payout, JSON.stringify(properties3), {
         from: owner
       })
       
@@ -196,7 +200,7 @@ contract('Product', accounts => {
         from: owner
       })  
   
-      await productInstance.addPolicy(policyIdBytes4, start, end, payout, JSON.stringify(properties4), {
+      await productInstance.addPolicy(policyIdBytes4, payout, JSON.stringify(properties4), {
         from: owner
       })
 
@@ -214,7 +218,7 @@ contract('Product', accounts => {
       assert.equal(policiesPayoutsCount, 1)
       assert.equal(policiesTotalPayouts.toNumber(), payout)
 
-      const policiesCount = await productInstance.policiesCount()
+      const policiesCount = await productInstance.policiesIdsLength()
 
       const policiesTotalCalculatedPayouts = await productInstance.policiesTotalCalculatedPayouts();
 
@@ -269,7 +273,7 @@ contract('Product', accounts => {
         from: owner
       })
   
-      await productInstance.addPolicy(policyIdBytes1, start, end, payout, JSON.stringify(properties1), {
+      await productInstance.addPolicy(policyIdBytes1, payout, JSON.stringify(properties1), {
         from: owner
       })
 
@@ -307,7 +311,7 @@ contract('Product', accounts => {
         from: owner
       })
   
-      await productInstance.addPolicy(policyIdBytes2, start, end, payout, JSON.stringify(properties2), {
+      await productInstance.addPolicy(policyIdBytes2, payout, JSON.stringify(properties2), {
         from: owner
       })
 
@@ -346,7 +350,7 @@ contract('Product', accounts => {
         from: owner
       })
   
-      await productInstance.addPolicy(policyIdBytes3, start, end, payout, JSON.stringify(properties3), {
+      await productInstance.addPolicy(policyIdBytes3, payout, JSON.stringify(properties3), {
         from: owner
       })
       
@@ -384,11 +388,11 @@ contract('Product', accounts => {
         from: owner
       })  
   
-      await productInstance.addPolicy(policyIdBytes4, start, end, payout, JSON.stringify(properties4), {
+      await productInstance.addPolicy(policyIdBytes4, payout, JSON.stringify(properties4), {
         from: owner
       })
 
-      const policiesCount = await productInstance.policiesCount()
+      const policiesCount = await productInstance.policiesIdsLength()
       const policiesTotalCalculatedPayouts = await productInstance.policiesTotalCalculatedPayouts()
 
       assert.equal(policiesTotalCalculatedPayouts.toNumber(), payout * 4)
