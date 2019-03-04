@@ -4,6 +4,7 @@ import "./../utils/OwnedWithExecutor.sol";
 import "./../utils/SafeMath.sol";
 import "./../utils/BytesHelper.sol";
 import "./../interfaces/IERC20.sol";
+import "./../interfaces/IPremiumCalculator.sol";
 
 interface IProduct {
     function addPolicy(bytes32 _id, uint _calculatedPayout, string _properties) external;
@@ -205,6 +206,22 @@ contract Product is Owned, IProduct {
     //////////
     // Views
     //////////
+
+    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint) {
+       
+       (uint basePremium, uint payout, uint loading) = IPremiumCalculator(premiumCalculator).getDetails();
+       
+        return (premiumCalculator, 
+          investorsPool, 
+          utcProductStartDate,
+          utcProductEndDate,
+          title,
+          description,
+          basePremium,
+          payout,
+          loading
+          );
+    }
 
     function myPoliciesLength(address owner) public view returns (uint) {
         return myPolicies[owner].length;

@@ -3,35 +3,7 @@ pragma solidity ^0.4.23;
 import "./../utils/Owned.sol";
 import "./../utils/SafeMath.sol";
 import "./../utils/Strings.sol";
-
-interface IPremiumCalculator {
-    function calculatePremium(
-        uint _batteryDesignCapacity,
-        uint _currentChargeLevel,
-        uint _deviceAgeInMonths,
-        string _region,
-        string _deviceBrand,
-        string _batteryWearLevel
-    ) external view returns (uint);
-
-    function validate(
-        uint _batteryDesignCapacity, 
-        uint _currentChargeLevel,
-        uint _deviceAgeInMonths,
-        string _region,
-        string _deviceBrand,
-        string _batteryWearLevel) 
-            external 
-            view 
-            returns (bytes2);
-    
-    function isClaimable(string _batteryWearLevel
-    ) external pure returns (bool);
-
-    function getPayout(
-    ) external view returns (uint);
-}
-
+import "./../interfaces/IPremiumCalculator.sol";
 
 contract PremiumCalculator is Owned, IPremiumCalculator {
     uint public basePremium; // AIX in weis
@@ -289,6 +261,11 @@ contract PremiumCalculator is Owned, IPremiumCalculator {
             coefficientIntervals[_type][_index].max = _maxValue;
             coefficientIntervals[_type][_index].coefficient = _coefficient;
         }
+    }
+
+    function getDetails() external view returns (uint, uint, uint)
+    {
+        return (basePremium, payout, loading);
     }
 
     function setCoefficient(bytes2 _type, string _key, uint _coefficient) external onlyOwner {

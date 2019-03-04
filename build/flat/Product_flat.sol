@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.25;
 
 interface IProduct {
     function addPolicy(bytes32 _id, uint _calculatedPayout, string _properties) external;
@@ -13,6 +13,37 @@ interface IERC20 {
   function allowance(address _owner, address _spender) external constant returns (uint256 remaining);
   function approveAndCall(address _spender, uint256 _amount, bytes _extraData) external returns (bool success);
   function totalSupply() external constant returns (uint);
+}
+
+interface IPremiumCalculator {
+    function calculatePremium(
+        uint _batteryDesignCapacity,
+        uint _currentChargeLevel,
+        uint _deviceAgeInMonths,
+        string _region,
+        string _deviceBrand,
+        string _batteryWearLevel
+    ) external view returns (uint);
+
+    function validate(
+        uint _batteryDesignCapacity, 
+        uint _currentChargeLevel,
+        uint _deviceAgeInMonths,
+        string _region,
+        string _deviceBrand,
+        string _batteryWearLevel) 
+            external 
+            view 
+            returns (bytes2);
+    
+    function isClaimable(string _batteryWearLevel
+    ) external pure returns (bool);
+
+    function getPayout(
+    ) external view returns (uint);
+
+    function getDetails(
+    ) external view returns (uint, uint, uint);
 }
 
 library BytesHelper {
@@ -278,6 +309,22 @@ contract Product is Owned, IProduct {
     //////////
     // Views
     //////////
+
+    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint) {
+       
+       (uint basePremium, uint payout, uint loading) = IPremiumCalculator(premiumCalculator).getDetails();
+       
+        return (premiumCalculator, 
+          investorsPool, 
+          utcProductStartDate,
+          utcProductEndDate,
+          title,
+          description,
+          basePremium,
+          payout,
+          loading
+          );
+    }
 
     function myPoliciesLength(address owner) public view returns (uint) {
         return myPolicies[owner].length;

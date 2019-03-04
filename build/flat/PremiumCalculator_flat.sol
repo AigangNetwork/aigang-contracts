@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.25;
 
 interface IPremiumCalculator {
     function calculatePremium(
@@ -26,6 +26,9 @@ interface IPremiumCalculator {
 
     function getPayout(
     ) external view returns (uint);
+
+    function getDetails(
+    ) external view returns (uint, uint, uint);
 }
 
 contract Owned {
@@ -311,6 +314,11 @@ contract PremiumCalculator is Owned, IPremiumCalculator {
             coefficientIntervals[_type][_index].max = _maxValue;
             coefficientIntervals[_type][_index].coefficient = _coefficient;
         }
+    }
+
+    function getDetails() external view returns (uint, uint, uint)
+    {
+        return (basePremium, payout, loading);
     }
 
     function setCoefficient(bytes2 _type, string _key, uint _coefficient) external onlyOwner {
