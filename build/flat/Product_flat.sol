@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.4.13;
 
 interface IProduct {
     function addPolicy(bytes32 _id, uint _calculatedPayout, string _properties) external;
@@ -310,7 +310,7 @@ contract Product is Owned, IProduct {
     // Views
     //////////
 
-    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint) {
+    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint, uint) {
        
        (uint basePremium, uint payout, uint loading) = IPremiumCalculator(premiumCalculator).getDetails();
        
@@ -320,9 +320,21 @@ contract Product is Owned, IProduct {
           utcProductEndDate,
           title,
           description,
+          policyTermInSeconds,
           basePremium,
           payout,
           loading
+          );
+    }
+
+    function getProductStats() public view returns (bool, uint, uint, uint, uint, uint) {
+        return (
+            paused,
+            IERC20(token).balanceOf(this),
+            policiesIds.length,
+            policiesTotalCalculatedPayouts,
+            policiesPayoutsCount,
+            policiesTotalPayouts
           );
     }
 
