@@ -255,7 +255,7 @@ contract Product is Owned, IProduct {
 
         bytes32 policyId = _data.bytesToBytes32();
 
-        require(policies[policyId].premium == 0, "policy is paid and laready exist");
+        require(policies[policyId].premium == 0, "policy is paid and already exist");
 
         // Transfer tokens from sender to this contract
         require(IERC20(_token).transferFrom(_from, address(this), _amountOfTokens), "Tokens transfer failed.");
@@ -310,7 +310,7 @@ contract Product is Owned, IProduct {
     // Views
     //////////
 
-    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint, uint) {
+    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint, uint, uint, uint, uint) {
        
        (uint basePremium, uint payout, uint loading) = IPremiumCalculator(premiumCalculator).getDetails();
        
@@ -323,7 +323,10 @@ contract Product is Owned, IProduct {
           policyTermInSeconds,
           basePremium,
           payout,
-          loading
+          loading,
+          policiesLimit,
+          productPoolLimit,
+          policyTermInSeconds
           );
     }
 

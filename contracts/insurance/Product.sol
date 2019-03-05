@@ -207,7 +207,7 @@ contract Product is Owned, IProduct {
     // Views
     //////////
 
-    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint, uint) {
+    function getProductDetails() public view returns (address, address, uint, uint, string, string, uint, uint, uint, uint, uint, uint, uint) {
        
        (uint basePremium, uint payout, uint loading) = IPremiumCalculator(premiumCalculator).getDetails();
        
@@ -220,7 +220,10 @@ contract Product is Owned, IProduct {
           policyTermInSeconds,
           basePremium,
           payout,
-          loading
+          loading,
+          policiesLimit,
+          productPoolLimit,
+          policyTermInSeconds
           );
     }
 
