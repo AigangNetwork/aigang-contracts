@@ -326,7 +326,7 @@ contract Product is Owned, IProduct {
           loading,
           policiesLimit,
           productPoolLimit,
-          policyTermInSeconds
+          created
           );
     }
 
