@@ -17,7 +17,7 @@ contract Pools is Owned {
 
     event PoolAddressesUpdated(uint _id, address _destination, address _prizeCalculator);
     event PoolDescriptionsUpdated(uint _id, string _title, string _description);
-    event PoolDataUpdated(uint _id, uint _contributionEndUtc, uint _amountLimit);
+    event PoolDataUpdated(uint _id, uint _contributionStartUtc, uint _contributionEndUtc, uint _amountLimit);
     
     struct Pool {  
         uint contributionStartUtc;
@@ -241,17 +241,18 @@ contract Pools is Owned {
     }
 
     function updateData(uint _poolId, 
+            uint _contributionStartUtc,
             uint _contributionEndUtc,
             uint _amountLimit) 
         external 
         onlyOwnerOrSuperOwner 
         contractNotPaused 
         poolExist(_poolId) {
-
+        pools[_poolId].contributionStartUtc = _contributionStartUtc;
         pools[_poolId].contributionEndUtc = _contributionEndUtc;
         pools[_poolId].amountLimit = _amountLimit;
 
-        emit PoolDataUpdated(_poolId, _contributionEndUtc, _amountLimit);
+        emit PoolDataUpdated(_poolId, _contributionStartUtc, _contributionEndUtc, _amountLimit);
     }
 
     //////////

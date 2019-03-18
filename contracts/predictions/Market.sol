@@ -39,7 +39,6 @@ contract Market is Owned {
         uint8 outcomesCount;
         uint8 resultOutcome;
         uint[] forecasts;
-        //mapping(uint8 => uint) outcomeTokens;
         uint initialTokens;  
         uint totalTokens;          
         uint totalForecasts;   
@@ -282,7 +281,7 @@ contract Market is Owned {
         emit Refunded(predictionId, _forecastId);
     }
 
-     //////////
+    //////////
     // Updates
     //////////
     function updateAddresses(uint _predictionId, 
